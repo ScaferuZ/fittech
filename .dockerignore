@@ -1,0 +1,61 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Node.js
+frontend/node_modules
+frontend/build
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+
+# Python
+backend/__pycache__
+backend/**/__pycache__
+backend/*.pyc
+backend/**/*.pyc
+venv/
+.venv/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+backend/logs/
+
+# Documentation
+README.md
+*.md
+
+# Test files
+test/
+tests/
+*_test.py
+*_tests.py
+
+# Development files
+debug_*.py
+jupyter_notebooks/
+
+# Temporary files
+tmp/
+temp/
+
+# Visual outputs
+backend/visualizations/
+
+# Large datasets (keep training data but exclude large CSVs)
+# *.csv  # Commented out to keep training_data.csv
+backend/e267_Data*.txt 

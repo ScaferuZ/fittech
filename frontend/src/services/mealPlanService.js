@@ -1,22 +1,27 @@
 // Meal Plan Service for fetching organized meal plans from backend API
 class MealPlanService {
   constructor() {
-    this.baseURL = 'http://localhost:5000'; // Backend API URL
+    this.baseURL = process.env.REACT_APP_API_URL || "http://localhost:5000"; // Backend API URL
   }
 
-  async generateDailyMealPlan(targetCalories, targetProtein, targetCarbs, targetFat) {
+  async generateDailyMealPlan(
+    targetCalories,
+    targetProtein,
+    targetCarbs,
+    targetFat
+  ) {
     try {
       const response = await fetch(`${this.baseURL}/meal-plan`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           target_calories: targetCalories,
           target_protein: targetProtein,
           target_carbs: targetCarbs,
-          target_fat: targetFat
-        })
+          target_fat: targetFat,
+        }),
       });
 
       if (!response.ok) {
@@ -26,13 +31,13 @@ class MealPlanService {
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error('Error generating meal plan:', error);
-      
+      console.error("Error generating meal plan:", error);
+
       // Return fallback data structure if API fails
       return {
         success: false,
         error: error.message,
-        fallback: true
+        fallback: true,
       };
     }
   }
@@ -40,7 +45,7 @@ class MealPlanService {
   async getMealOptions(mealType) {
     try {
       const response = await fetch(`${this.baseURL}/meal-options/${mealType}`);
-      
+
       if (!response.ok) {
         throw new Error(`API request failed: ${response.status}`);
       }
@@ -48,10 +53,10 @@ class MealPlanService {
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error('Error fetching meal options:', error);
+      console.error("Error fetching meal options:", error);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -59,14 +64,14 @@ class MealPlanService {
   async scaleMeal(mealId, targetCalories) {
     try {
       const response = await fetch(`${this.baseURL}/scale-meal`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           meal_id: mealId,
-          target_calories: targetCalories
-        })
+          target_calories: targetCalories,
+        }),
       });
 
       if (!response.ok) {
@@ -76,10 +81,10 @@ class MealPlanService {
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error('Error scaling meal:', error);
+      console.error("Error scaling meal:", error);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -95,22 +100,22 @@ class MealPlanService {
 
     // Map backend meal types to frontend format
     const mealMapping = {
-      'sarapan': { name: '🌅 Sarapan', type: 'sarapan' },
-      'makan_siang': { name: '☀️ Makan Siang', type: 'makan_siang' },
-      'makan_malam': { name: '🌙 Makan Malam', type: 'makan_malam' },
-      'snack': { name: '🍪 Camilan', type: 'camilan' }
+      sarapan: { name: "🌅 Sarapan", type: "sarapan" },
+      makan_siang: { name: "☀️ Makan Siang", type: "makan_siang" },
+      makan_malam: { name: "🌙 Makan Malam", type: "makan_malam" },
+      snack: { name: "🍪 Camilan", type: "camilan" },
     };
 
     Object.entries(mealMapping).forEach(([backendType, frontendConfig]) => {
       const meal = mealPlan[backendType];
       if (meal) {
-        const transformedFoods = meal.foods.map(food => ({
+        const transformedFoods = meal.foods.map((food) => ({
           name: food.nama,
           grams: food.amount,
           actualCalories: food.calories,
           actualProtein: food.protein,
           actualCarbs: food.carbs,
-          actualFat: food.fat
+          actualFat: food.fat,
         }));
 
         suggestions.push({
@@ -120,7 +125,7 @@ class MealPlanService {
           targetProtein: Math.round(meal.scaled_protein),
           foods: transformedFoods,
           mealName: meal.meal_name,
-          description: meal.description
+          description: meal.description,
         });
       }
     });

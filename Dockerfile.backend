@@ -1,0 +1,42 @@
+# Backend Dockerfile - Flask API
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements file
+COPY requirements.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy backend source code
+COPY backend/ ./backend/
+COPY data/ ./data/
+COPY scripts/ ./scripts/
+
+# Set Python path to include backend directory
+ENV PYTHONPATH=/app/backend:/app/backend/src:$PYTHONPATH
+
+# Change to backend directory
+WORKDIR /app/backend
+
+# Create necessary directories and copy trained models
+RUN mkdir -p logs models/saved
+COPY backend/models/ ./models/
+
+# Expose port 5000
+EXPOSE 5000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD python -c "import requests; requests.get('http://localhost:5000/health')" || exit 1
+
+# Run the Flask application
+CMD ["python", "app.py"] 
