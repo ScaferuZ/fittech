@@ -27,9 +27,22 @@ ENV PYTHONPATH=/app/backend:/app/backend/src:$PYTHONPATH
 # Change to backend directory
 WORKDIR /app/backend
 
-# Create necessary directories and copy trained models
+# Create necessary directories
 RUN mkdir -p logs models/saved
+
+# Copy pre-trained models (much faster than training during build)
+# This avoids memory/CPU issues on resource-constrained VPS
 COPY backend/models/ ./models/
+
+# Verify models exist or provide fallback
+RUN if [ -f "./models/xgfitness_ai_model.pkl" ]; then \
+        echo "✅ Pre-trained models copied successfully"; \
+        ls -la ./models/*.pkl; \
+    else \
+        echo "⚠️  Pre-trained models not found"; \
+        echo "📝 Models will be trained on first API request"; \
+        echo "💡 This is safer for resource-constrained environments"; \
+    fi
 
 # Expose port 5000
 EXPOSE 5000
