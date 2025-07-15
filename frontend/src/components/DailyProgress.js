@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   VStack,
@@ -45,58 +45,53 @@ import {
   AvatarBadge,
   List,
   ListItem,
-  ListIcon,
-} from "@chakra-ui/react";
-import {
-  CheckCircleIcon,
-  TimeIcon,
-  StarIcon,
+  ListIcon
+} from '@chakra-ui/react';
+import { 
+  CheckCircleIcon, 
+  TimeIcon, 
+  StarIcon, 
   InfoIcon,
   ChevronDownIcon,
   ChevronUpIcon,
   ViewIcon,
   CloseIcon,
   EditIcon,
-  CheckIcon,
-} from "@chakra-ui/icons";
-import { db } from "../services/firebaseConfig";
-import { recommendationService } from "../services/recommendationService";
-import { apiService } from "../services/api";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+  CheckIcon
+} from '@chakra-ui/icons';
+import { db } from '../services/firebaseConfig';
+import { recommendationService } from '../services/recommendationService';
+import { apiService } from '../services/api';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 
-const DailyProgress = ({
-  user,
-  onProgressUpdate,
-  userProfile,
-  currentRecommendation,
-}) => {
+
+const DailyProgress = ({ user, onProgressUpdate, userProfile, currentRecommendation }) => {
   const [progressData, setProgressData] = useState({
     workout: false,
     nutrition: false,
     hydration: false,
-    notes: "",
-    mood: "",
+    notes: '',
+    mood: '',
     workoutRating: 0,
     energyLevel: 0,
     sleepQuality: 0,
     stressLevel: 0,
     recommendationEffectiveness: 0,
-    weight: "",
-    bodyFat: "",
+    weight: '',
+    bodyFat: '',
     measurements: {
-      chest: "",
-      waist: "",
-      arms: "",
-      thighs: "",
-    },
+      chest: '',
+      waist: '',
+      arms: '',
+      thighs: ''
+    }
   });
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [recommendationHistory, setRecommendationHistory] = useState([]);
   const [selectedRecommendation, setSelectedRecommendation] = useState(null);
-  const [showRecommendationHistory, setShowRecommendationHistory] =
-    useState(false);
+  const [showRecommendationHistory, setShowRecommendationHistory] = useState(false);
   const [mealPlanLoading, setMealPlanLoading] = useState(false);
   const [nutritionTemplates, setNutritionTemplates] = useState([]);
   const [workoutTemplates, setWorkoutTemplates] = useState([]);
@@ -105,32 +100,33 @@ const DailyProgress = ({
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = new Date().toISOString().split('T')[0];
 
   // Color mode values
-  const bgColor = useColorModeValue("white", "gray.800");
-  const borderColor = useColorModeValue("gray.200", "gray.700");
-  const cardBg = useColorModeValue("white", "gray.700");
-  const textColor = useColorModeValue("gray.800", "white");
-  const mutedTextColor = useColorModeValue("gray.600", "gray.400");
+  const bgColor = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const cardBg = useColorModeValue('white', 'gray.700');
+  const textColor = useColorModeValue('gray.800', 'white');
+  const mutedTextColor = useColorModeValue('gray.600', 'gray.400');
 
   // Load all templates with a single API call
   const loadAllTemplates = useCallback(async () => {
     setTemplatesLoading(true);
     try {
-      console.log("🔄 Loading all templates...");
+      console.log('🔄 Loading all templates...');
       const result = await apiService.getAllTemplates();
-
-      console.log("✅ All templates loaded:", {
-        workoutCount: result.workoutTemplates?.length || 0,
-        nutritionCount: result.nutritionTemplates?.length || 0,
+      
+      console.log('✅ All templates loaded:', { 
+        workoutCount: result.workoutTemplates?.length || 0, 
+        nutritionCount: result.nutritionTemplates?.length || 0 
       });
-
+      
       setWorkoutTemplates(result.workoutTemplates || []);
       setNutritionTemplates(result.nutritionTemplates || []);
+      
     } catch (error) {
-      console.error("❌ Error loading templates:", error);
-      console.log("⚠️ Will use template data from recommendations as fallback");
+      console.error('❌ Error loading templates:', error);
+      console.log('⚠️ Will use template data from recommendations as fallback');
       setWorkoutTemplates([]);
       setNutritionTemplates([]);
     } finally {
@@ -142,55 +138,35 @@ const DailyProgress = ({
   const findNutritionTemplate = (templateId, recommendationData = null) => {
     // First try to find in loaded templates
     if (nutritionTemplates.length > 0) {
-      console.log(
-        "🔍 Looking for nutrition template ID:",
-        templateId,
-        "in loaded templates:",
-        nutritionTemplates.length
-      );
-      const template = nutritionTemplates.find(
-        (template) => template.template_id === parseInt(templateId)
-      );
+      console.log('🔍 Looking for nutrition template ID:', templateId, 'in loaded templates:', nutritionTemplates.length);
+      const template = nutritionTemplates.find(template => template.template_id === parseInt(templateId));
       if (template) {
-        console.log(
-          "✅ Found nutrition template in loaded templates:",
-          template
-        );
+        console.log('✅ Found nutrition template in loaded templates:', template);
         return template;
       }
     }
-
+    
     // Second: try to get from stored template data in recommendation
     if (recommendationData?.templateData?.nutritionTemplate) {
       const storedTemplate = recommendationData.templateData.nutritionTemplate;
       if (storedTemplate.template_id === parseInt(templateId)) {
-        console.log(
-          "✅ Found nutrition template in stored template data:",
-          storedTemplate
-        );
+        console.log('✅ Found nutrition template in stored template data:', storedTemplate);
         return storedTemplate;
       }
     }
-
+    
     // Third: try to extract template data from recommendation
     if (recommendationData?.recommendations) {
-      const nutritionRec =
-        recommendationData.recommendations.nutrition_recommendation ||
-        recommendationData.recommendations.predictions?.nutrition_template;
-
+      const nutritionRec = recommendationData.recommendations.nutrition_recommendation || 
+                          recommendationData.recommendations.predictions?.nutrition_template;
+      
       if (nutritionRec && nutritionRec.template_id === parseInt(templateId)) {
-        console.log(
-          "✅ Found nutrition template data in recommendation:",
-          nutritionRec
-        );
+        console.log('✅ Found nutrition template data in recommendation:', nutritionRec);
         return nutritionRec;
       }
     }
-
-    console.warn(
-      `❌ Nutrition template ${templateId} not found. Available templates:`,
-      nutritionTemplates.map((t) => t?.template_id)
-    );
+    
+    console.warn(`❌ Nutrition template ${templateId} not found. Available templates:`, nutritionTemplates.map(t => t?.template_id));
     return null;
   };
 
@@ -198,129 +174,110 @@ const DailyProgress = ({
   const findWorkoutTemplate = (templateId, recommendationData = null) => {
     // First try to find in loaded templates
     if (workoutTemplates.length > 0) {
-      console.log(
-        "🔍 Looking for workout template ID:",
-        templateId,
-        "in loaded templates:",
-        workoutTemplates.length
-      );
-      const template = workoutTemplates.find(
-        (template) => template.template_id === parseInt(templateId)
-      );
+      console.log('🔍 Looking for workout template ID:', templateId, 'in loaded templates:', workoutTemplates.length);
+      const template = workoutTemplates.find(template => template.template_id === parseInt(templateId));
       if (template) {
-        console.log("✅ Found workout template in loaded templates:", template);
+        console.log('✅ Found workout template in loaded templates:', template);
         return template;
       }
     }
-
+    
     // Second: try to get from stored template data in recommendation
     if (recommendationData?.templateData?.workoutTemplate) {
       const storedTemplate = recommendationData.templateData.workoutTemplate;
       if (storedTemplate.template_id === parseInt(templateId)) {
-        console.log(
-          "✅ Found workout template in stored template data:",
-          storedTemplate
-        );
+        console.log('✅ Found workout template in stored template data:', storedTemplate);
         return storedTemplate;
       }
     }
-
+    
     // Third: try to extract template data from recommendation
     if (recommendationData?.recommendations) {
-      const workoutRec =
-        recommendationData.recommendations.workout_recommendation ||
-        recommendationData.recommendations.predictions?.workout_template;
-
+      const workoutRec = recommendationData.recommendations.workout_recommendation || 
+                        recommendationData.recommendations.predictions?.workout_template;
+      
       if (workoutRec && workoutRec.template_id === parseInt(templateId)) {
-        console.log(
-          "✅ Found workout template data in recommendation:",
-          workoutRec
-        );
+        console.log('✅ Found workout template data in recommendation:', workoutRec);
         return workoutRec;
       }
     }
-
-    console.warn(
-      `❌ Workout template ${templateId} not found. Available templates:`,
-      workoutTemplates.map((t) => t?.template_id)
-    );
+    
+    console.warn(`❌ Workout template ${templateId} not found. Available templates:`, workoutTemplates.map(t => t?.template_id));
     return null;
   };
 
   // Get fitness goal info based on user's actual goal
   const getFitnessGoalInfo = () => {
-    const goal = userProfile?.fitness_goal || "Fat Loss";
-
+    const goal = userProfile?.fitness_goal || 'Fat Loss';
+    
     switch (goal) {
-      case "Fat Loss":
+      case 'Fat Loss':
         return {
-          icon: "📉",
-          title: "Menurunkan Berat Badan",
-          description:
-            "Fokus pada pembakaran kalori dan pengurangan lemak tubuh",
-          color: "red",
+          icon: '📉',
+          title: 'Menurunkan Berat Badan',
+          description: 'Fokus pada pembakaran kalori dan pengurangan lemak tubuh',
+          color: 'red'
         };
-      case "Muscle Gain":
+      case 'Muscle Gain':
         return {
-          icon: "💪",
-          title: "Menambah Massa Otot",
-          description:
-            "Membangun otot dengan latihan beban dan nutrisi yang tepat",
-          color: "blue",
+          icon: '💪',
+          title: 'Menambah Massa Otot',
+          description: 'Membangun otot dengan latihan beban dan nutrisi yang tepat',
+          color: 'blue'
         };
-      case "Maintenance":
+      case 'Maintenance':
         return {
-          icon: "⚖️",
-          title: "Mempertahankan Bentuk Tubuh",
-          description: "Menjaga kondisi fisik dan berat badan yang sudah ideal",
-          color: "green",
+          icon: '⚖️',
+          title: 'Mempertahankan Bentuk Tubuh',
+          description: 'Menjaga kondisi fisik dan berat badan yang sudah ideal',
+          color: 'green'
         };
       default:
         return {
-          icon: "🎯",
-          title: "Target Fitness",
-          description: "Mencapai tujuan kesehatan dan kebugaran optimal",
-          color: "purple",
+          icon: '🎯',
+          title: 'Target Fitness',
+          description: 'Mencapai tujuan kesehatan dan kebugaran optimal',
+          color: 'purple'
         };
     }
   };
 
   // Get activity level info
   const getActivityLevelInfo = () => {
-    const level = userProfile?.activity_level || "Low Activity";
-
+    const level = userProfile?.activity_level || 'Low Activity';
+    
     switch (level) {
-      case "Low Activity":
+      case 'Low Activity':
         return {
-          icon: "🚶‍♂️",
-          title: "Aktivitas Rendah",
-          multiplier: "1.29",
-          description: "Olahraga ringan dengan intensitas rendah",
-          color: "orange",
+          icon: '🚶‍♂️',
+          title: 'Aktivitas Rendah',
+          multiplier: '1.29',
+          description: 'Olahraga ringan dengan intensitas rendah',
+          color: 'orange'
         };
-      case "Moderate Activity":
+      case 'Moderate Activity':
         return {
-          icon: "🏃‍♂️",
-          title: "Aktivitas Sedang",
-          multiplier: "1.55",
-          description: "Olahraga teratur dengan intensitas sedang",
-          color: "yellow",
+          icon: '🏃‍♂️',
+          title: 'Aktivitas Sedang',
+          multiplier: '1.55',
+          description: 'Olahraga teratur dengan intensitas sedang',
+          color: 'yellow'
         };
-      case "High Activity":
+      case 'High Activity':
         return {
-          icon: "🏋️‍♂️",
-          title: "Aktivitas Tinggi",
-          multiplier: "1.81",
-          description: "Olahraga intensif dengan frekuensi tinggi",
-          color: "green",
+          icon: '🏋️‍♂️',
+          title: 'Aktivitas Tinggi',
+          multiplier: '1.81',
+          description: 'Olahraga intensif dengan frekuensi tinggi',
+          color: 'green'
         };
       default:
         return {
-          icon: "🎯",
-          title: "Level Aktivitas",
-          multiplier: "1.0",
-          description: "Tingkat aktivitas belum ditentukan",
-          color: "gray",
+          icon: '🎯',
+          title: 'Level Aktivitas',
+          multiplier: '1.0',
+          description: 'Tingkat aktivitas belum ditentukan',
+          color: 'gray'
         };
     }
   };
@@ -328,41 +285,41 @@ const DailyProgress = ({
   // Load today's progress data
   const loadTodaysProgress = useCallback(async () => {
     if (!user) return;
-
+    
     setLoading(true);
     try {
-      const progressRef = doc(db, "userProgress", `${user.uid}_${today}`);
+      const progressRef = doc(db, 'userProgress', `${user.uid}_${today}`);
       const progressDoc = await getDoc(progressRef);
-
+      
       if (progressDoc.exists()) {
         const data = progressDoc.data();
         setProgressData({
           workout: data.workout || false,
           nutrition: data.nutrition || false,
           hydration: data.hydration || false,
-          notes: data.notes || "",
-          mood: data.mood || "",
+          notes: data.notes || '',
+          mood: data.mood || '',
           workoutRating: data.workoutRating || 0,
           energyLevel: data.energyLevel || 0,
           sleepQuality: data.sleepQuality || 0,
           stressLevel: data.stressLevel || 0,
           recommendationEffectiveness: data.recommendationEffectiveness || 0,
-          weight: data.weight || "",
-          bodyFat: data.bodyFat || "",
+          weight: data.weight || '',
+          bodyFat: data.bodyFat || '',
           measurements: data.measurements || {
-            chest: "",
-            waist: "",
-            arms: "",
-            thighs: "",
-          },
+            chest: '',
+            waist: '',
+            arms: '',
+            thighs: ''
+          }
         });
       }
     } catch (error) {
-      console.error("Error loading progress:", error);
+      console.error('Error loading progress:', error);
       toast({
-        title: "Error",
-        description: "Gagal memuat data progress hari ini",
-        status: "error",
+        title: 'Error',
+        description: 'Gagal memuat data progress hari ini',
+        status: 'error',
         duration: 3000,
         isClosable: true,
       });
@@ -375,87 +332,64 @@ const DailyProgress = ({
   const generateMealPlanForRecommendation = async (recommendation) => {
     // First check if the recommendation already has a meal plan stored directly
     if (recommendation.mealPlan) {
-      console.log(
-        "✅ Meal plan already exists in recommendation object:",
-        recommendation.id
-      );
+      console.log('✅ Meal plan already exists in recommendation object:', recommendation.id);
       return recommendation;
     }
-
+    
     // Second, try to load the meal plan from Firebase (might have been saved after initial creation)
     try {
-      const savedRecommendation =
-        await recommendationService.getRecommendationById(recommendation.id);
+      const savedRecommendation = await recommendationService.getRecommendationById(recommendation.id);
       if (savedRecommendation && savedRecommendation.mealPlan) {
-        console.log(
-          "✅ Found saved meal plan in Firebase for recommendation:",
-          recommendation.id
-        );
+        console.log('✅ Found saved meal plan in Firebase for recommendation:', recommendation.id);
         return {
           ...recommendation,
-          mealPlan: savedRecommendation.mealPlan,
+          mealPlan: savedRecommendation.mealPlan
         };
       }
     } catch (error) {
-      console.warn(
-        "❌ Could not retrieve recommendation from Firebase:",
-        error
-      );
+      console.warn('❌ Could not retrieve recommendation from Firebase:', error);
     }
-
+    
     // Third, check if meal plan exists in the original recommendations data
-    const originalMealPlan =
-      recommendation.recommendations?.meal_plan ||
-      recommendation.recommendations?.daily_meal_plan ||
-      recommendation.recommendations?.predictions?.meal_plan;
-
+    const originalMealPlan = recommendation.recommendations?.meal_plan ||
+                            recommendation.recommendations?.daily_meal_plan ||
+                            recommendation.recommendations?.predictions?.meal_plan;
+    
     if (originalMealPlan) {
-      console.log(
-        "✅ Found original meal plan in recommendation data:",
-        originalMealPlan
-      );
+      console.log('✅ Found original meal plan in recommendation data:', originalMealPlan);
       return {
         ...recommendation,
-        mealPlan: originalMealPlan,
+        mealPlan: originalMealPlan
       };
     }
-
-    console.log(
-      "🔍 No existing meal plan found, will NOT generate new one to preserve original data"
-    );
-    console.log("� Recommendation structure:", {
+    
+    console.log('🔍 No existing meal plan found, will NOT generate new one to preserve original data');
+    console.log('� Recommendation structure:', {
       hasMealPlan: !!recommendation.mealPlan,
       hasRecommendationsMealPlan: !!recommendation.recommendations?.meal_plan,
-      hasRecommendationsDailyMealPlan:
-        !!recommendation.recommendations?.daily_meal_plan,
-      hasPredictionsMealPlan:
-        !!recommendation.recommendations?.predictions?.meal_plan,
+      hasRecommendationsDailyMealPlan: !!recommendation.recommendations?.daily_meal_plan,
+      hasPredictionsMealPlan: !!recommendation.recommendations?.predictions?.meal_plan,
       recommendationKeys: Object.keys(recommendation.recommendations || {}),
-      predictionsKeys: Object.keys(
-        recommendation.recommendations?.predictions || {}
-      ),
+      predictionsKeys: Object.keys(recommendation.recommendations?.predictions || {})
     });
-
+    
     // Instead of generating a new meal plan, return with a message that original meal plan was not found
     return {
       ...recommendation,
       mealPlan: null,
-      mealPlanStatus: "original_not_found",
+      mealPlanStatus: 'original_not_found'
     };
   };
 
   // Load recommendation history
   const loadRecommendationHistory = useCallback(async () => {
     if (!user) return;
-
+    
     try {
-      const history = await recommendationService.getRecommendationHistory(
-        user.uid,
-        20
-      );
+      const history = await recommendationService.getRecommendationHistory(user.uid, 20);
       setRecommendationHistory(history);
     } catch (error) {
-      console.error("Error loading recommendation history:", error);
+      console.error('Error loading recommendation history:', error);
     }
   }, [user]);
 
@@ -467,32 +401,32 @@ const DailyProgress = ({
 
   const saveProgress = async (newData) => {
     if (!user) return;
-
+    
     setSaving(true);
     try {
-      const progressRef = doc(db, "userProgress", `${user.uid}_${today}`);
+      const progressRef = doc(db, 'userProgress', `${user.uid}_${today}`);
       await setDoc(progressRef, {
         ...newData,
         date: today,
         userId: user.uid,
-        updatedAt: new Date(),
+        updatedAt: new Date()
       });
 
       onProgressUpdate && onProgressUpdate(newData);
-
+      
       toast({
-        title: "Berhasil",
-        description: "Progress berhasil disimpan",
-        status: "success",
+        title: 'Berhasil',
+        description: 'Progress berhasil disimpan',
+        status: 'success',
         duration: 2000,
         isClosable: true,
       });
     } catch (error) {
-      console.error("Error saving progress:", error);
+      console.error('Error saving progress:', error);
       toast({
-        title: "Error",
-        description: "Gagal menyimpan progress",
-        status: "error",
+        title: 'Error',
+        description: 'Gagal menyimpan progress',
+        status: 'error',
         duration: 3000,
         isClosable: true,
       });
@@ -504,7 +438,7 @@ const DailyProgress = ({
   const handleGoalToggle = (goal) => {
     const newData = {
       ...progressData,
-      [goal]: !progressData[goal],
+      [goal]: !progressData[goal]
     };
     setProgressData(newData);
     saveProgress(newData);
@@ -513,7 +447,7 @@ const DailyProgress = ({
   const handleNotesChange = (e) => {
     const newData = {
       ...progressData,
-      notes: e.target.value,
+      notes: e.target.value
     };
     setProgressData(newData);
     // Debounce saving notes
@@ -523,7 +457,7 @@ const DailyProgress = ({
   const handleFeedbackChange = (field, value) => {
     const newData = {
       ...progressData,
-      [field]: value,
+      [field]: value
     };
     setProgressData(newData);
     saveProgress(newData);
@@ -534,19 +468,15 @@ const DailyProgress = ({
       ...progressData,
       measurements: {
         ...progressData.measurements,
-        [field]: value,
-      },
+        [field]: value
+      }
     };
     setProgressData(newData);
     saveProgress(newData);
   };
 
   const getCompletionPercentage = () => {
-    const goals = [
-      progressData.workout,
-      progressData.nutrition,
-      progressData.hydration,
-    ];
+    const goals = [progressData.workout, progressData.nutrition, progressData.hydration];
     const completed = goals.filter(Boolean).length;
     return Math.round((completed / goals.length) * 100);
   };
@@ -567,33 +497,33 @@ const DailyProgress = ({
   // Helper functions for feedback
   const getMoodEmoji = (mood) => {
     const moodEmojis = {
-      excellent: "😄",
-      good: "🙂",
-      neutral: "😐",
-      bad: "😔",
-      terrible: "😢",
+      'excellent': '😄',
+      'good': '🙂',
+      'neutral': '😐',
+      'bad': '😔',
+      'terrible': '😢'
     };
-    return moodEmojis[mood] || "😐";
+    return moodEmojis[mood] || '😐';
   };
 
   const getRatingStars = (rating) => {
-    return "⭐".repeat(rating) + "☆".repeat(5 - rating);
+    return '⭐'.repeat(rating) + '☆'.repeat(5 - rating);
   };
 
   const getLevelLabel = (level) => {
-    if (level >= 4) return "Sangat Tinggi";
-    if (level >= 3) return "Tinggi";
-    if (level >= 2) return "Sedang";
-    if (level >= 1) return "Rendah";
-    return "Sangat Rendah";
+    if (level >= 4) return 'Sangat Tinggi';
+    if (level >= 3) return 'Tinggi';
+    if (level >= 2) return 'Sedang';
+    if (level >= 1) return 'Rendah';
+    return 'Sangat Rendah';
   };
 
   const getEffectivenessLabel = (rating) => {
-    if (rating >= 4) return "Sangat Efektif";
-    if (rating >= 3) return "Efektif";
-    if (rating >= 2) return "Cukup Efektif";
-    if (rating >= 1) return "Kurang Efektif";
-    return "Tidak Efektif";
+    if (rating >= 4) return 'Sangat Efektif';
+    if (rating >= 3) return 'Efektif';
+    if (rating >= 2) return 'Cukup Efektif';
+    if (rating >= 1) return 'Kurang Efektif';
+    return 'Tidak Efektif';
   };
 
   const fitnessGoalInfo = getFitnessGoalInfo();
@@ -625,11 +555,11 @@ const DailyProgress = ({
             📊 Progress Harian
           </Heading>
           <Text color={mutedTextColor} fontSize={{ base: "sm", md: "md" }}>
-            {new Date().toLocaleDateString("id-ID", {
-              weekday: "long",
-              year: "numeric",
-              month: "long",
-              day: "numeric",
+            {new Date().toLocaleDateString('id-ID', { 
+              weekday: 'long', 
+              year: 'numeric', 
+              month: 'long', 
+              day: 'numeric' 
             })}
           </Text>
         </Box>
@@ -637,11 +567,9 @@ const DailyProgress = ({
         {/* Recommendation History */}
         <Card bg={cardBg} borderWidth="1px" borderColor={borderColor}>
           <CardHeader>
-            <Heading size={{ base: "md", md: "lg" }}>
-              📋 Riwayat Rekomendasi
-            </Heading>
+            <Heading size={{ base: "md", md: "lg" }}>📋 Riwayat Rekomendasi</Heading>
           </CardHeader>
-
+          
           <CardBody>
             {recommendationHistory.length === 0 ? (
               <Alert status="info" borderRadius="md">
@@ -655,977 +583,761 @@ const DailyProgress = ({
               </Alert>
             ) : (
               <VStack spacing={4} align="stretch">
-                {recommendationHistory
-                  .slice(0, 5)
-                  .map((recommendation, index) => (
-                    <Card key={recommendation.id} variant="outline">
-                      <CardBody>
-                        <VStack align="stretch" spacing={4}>
-                          {/* Header with date and status */}
-                          <HStack justify="space-between">
-                            <VStack align="start" spacing={1}>
-                              <Text
-                                fontWeight="bold"
-                                fontSize={{ base: "sm", md: "md" }}
-                              >
-                                📅{" "}
-                                {new Date(
-                                  recommendation.createdAt.seconds * 1000
-                                ).toLocaleDateString("id-ID", {
-                                  weekday: "long",
-                                  year: "numeric",
-                                  month: "long",
-                                  day: "numeric",
-                                })}
-                              </Text>
-                              <Text fontSize="xs" color={mutedTextColor}>
-                                🕐{" "}
-                                {new Date(
-                                  recommendation.createdAt.seconds * 1000
-                                ).toLocaleString("id-ID", {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                  second: "2-digit",
-                                  timeZoneName: "short",
-                                })}
-                              </Text>
-                            </VStack>
-                            <HStack spacing={2}>
-                              {recommendation.isActive && (
-                                <Badge colorScheme="green" variant="subtle">
-                                  ✅ Aktif
-                                </Badge>
-                              )}
-                              {index === 0 && !recommendation.isActive && (
-                                <Badge colorScheme="blue" variant="subtle">
-                                  🆕 Terbaru
-                                </Badge>
-                              )}
-                            </HStack>
+                {recommendationHistory.slice(0, 5).map((recommendation, index) => (
+                  <Card key={recommendation.id} variant="outline">
+                    <CardBody>
+                      <VStack align="stretch" spacing={4}>
+                        {/* Header with date and status */}
+                        <HStack justify="space-between">
+                          <VStack align="start" spacing={1}>
+                            <Text fontWeight="bold" fontSize={{ base: "sm", md: "md" }}>
+                              📅 {new Date(recommendation.createdAt.seconds * 1000).toLocaleDateString('id-ID', {
+                                weekday: 'long',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                              })}
+                            </Text>
+                            <Text fontSize="xs" color={mutedTextColor}>
+                              🕐 {new Date(recommendation.createdAt.seconds * 1000).toLocaleString('id-ID', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                second: '2-digit',
+                                timeZoneName: 'short'
+                              })}
+                            </Text>
+                          </VStack>
+                          <HStack spacing={2}>
+                            {recommendation.isActive && (
+                              <Badge colorScheme="green" variant="subtle">
+                                ✅ Aktif
+                              </Badge>
+                            )}
+                            {index === 0 && !recommendation.isActive && (
+                              <Badge colorScheme="blue" variant="subtle">
+                                🆕 Terbaru
+                              </Badge>
+                            )}
                           </HStack>
-
-                          {/* User profile summary */}
-                          <SimpleGrid columns={{ base: 2, sm: 4 }} spacing={3}>
-                            <Stat>
-                              <StatLabel fontSize="xs">Tujuan</StatLabel>
-                              <StatNumber fontSize="sm">
-                                {recommendation.userData.fitness_goal ===
-                                "Fat Loss"
-                                  ? "Membakar Lemak"
-                                  : recommendation.userData.fitness_goal ===
-                                    "Muscle Gain"
-                                  ? "Menambah Otot"
-                                  : recommendation.userData.fitness_goal ===
-                                    "Maintenance"
-                                  ? "Mempertahankan"
-                                  : recommendation.userData.fitness_goal}
-                              </StatNumber>
-                            </Stat>
-                            <Stat>
-                              <StatLabel fontSize="xs">Aktivitas</StatLabel>
-                              <StatNumber fontSize="sm">
-                                {recommendation.userData.activity_level ===
-                                "High Activity"
-                                  ? "Aktivitas Tinggi"
-                                  : recommendation.userData.activity_level ===
-                                    "Moderate Activity"
-                                  ? "Aktivitas Sedang"
-                                  : recommendation.userData.activity_level ===
-                                    "Low Activity"
-                                  ? "Aktivitas Rendah"
-                                  : recommendation.userData.activity_level}
-                              </StatNumber>
-                            </Stat>
-                            <Stat>
-                              <StatLabel fontSize="xs">BMI</StatLabel>
-                              <StatNumber fontSize="sm">
-                                {recommendation.recommendations.user_metrics?.bmi?.toFixed(
-                                  1
-                                ) ||
-                                  (recommendation.userData?.weight &&
-                                  recommendation.userData?.height
-                                    ? (
-                                        recommendation.userData.weight /
-                                        (recommendation.userData.height /
-                                          100) **
-                                          2
-                                      ).toFixed(1)
-                                    : "N/A")}
-                              </StatNumber>
-                            </Stat>
-                            <Stat>
-                              <StatLabel fontSize="xs">TDEE</StatLabel>
-                              <StatNumber fontSize="sm">
-                                {Math.round(
-                                  recommendation.userProfile?.tdee ||
-                                    recommendation.recommendations?.user_profile
-                                      ?.tdee ||
-                                    recommendation.recommendations?.user_metrics
-                                      ?.tdee ||
-                                    recommendation.recommendations?.user_metrics
-                                      ?.total_daily_energy_expenditure ||
-                                    0
-                                )}{" "}
-                                kkal
-                              </StatNumber>
-                            </Stat>
-                          </SimpleGrid>
-
-                          {/* View Detail Button */}
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            leftIcon={<ViewIcon />}
-                            onClick={async () => {
-                              console.log(
-                                "🔍 Opening recommendation details:",
-                                recommendation
-                              );
-
-                              // Check if meal plan needs to be generated
-                              const updatedRecommendation =
-                                await generateMealPlanForRecommendation(
-                                  recommendation
-                                );
-                              setSelectedRecommendation(updatedRecommendation);
-                              onOpen();
-                            }}
-                          >
-                            Lihat Detail Lengkap
-                          </Button>
-                        </VStack>
-                      </CardBody>
-                    </Card>
-                  ))}
-
+                        </HStack>
+                        
+                        {/* User profile summary */}
+                        <SimpleGrid columns={{ base: 2, sm: 4 }} spacing={3}>
+                          <Stat>
+                            <StatLabel fontSize="xs">Tujuan</StatLabel>
+                            <StatNumber fontSize="sm">
+                              {recommendation.userData.fitness_goal === 'Fat Loss' ? 'Membakar Lemak' :
+                               recommendation.userData.fitness_goal === 'Muscle Gain' ? 'Menambah Otot' :
+                               recommendation.userData.fitness_goal === 'Maintenance' ? 'Mempertahankan' :
+                               recommendation.userData.fitness_goal}
+                            </StatNumber>
+                          </Stat>
+                          <Stat>
+                            <StatLabel fontSize="xs">Aktivitas</StatLabel>
+                            <StatNumber fontSize="sm">
+                              {recommendation.userData.activity_level === 'High Activity' ? 'Aktivitas Tinggi' :
+                               recommendation.userData.activity_level === 'Moderate Activity' ? 'Aktivitas Sedang' :
+                               recommendation.userData.activity_level === 'Low Activity' ? 'Aktivitas Rendah' :
+                               recommendation.userData.activity_level}
+                            </StatNumber>
+                          </Stat>
+                          <Stat>
+                            <StatLabel fontSize="xs">BMI</StatLabel>
+                            <StatNumber fontSize="sm">
+                              {recommendation.recommendations.user_metrics?.bmi?.toFixed(1) || 
+                               (recommendation.userData?.weight && recommendation.userData?.height ? 
+                                 (recommendation.userData.weight / ((recommendation.userData.height / 100) ** 2)).toFixed(1) : 
+                                 'N/A')}
+                            </StatNumber>
+                          </Stat>
+                          <Stat>
+                            <StatLabel fontSize="xs">TDEE</StatLabel>
+                            <StatNumber fontSize="sm">
+                              {Math.round(
+                                recommendation.userProfile?.tdee || 
+                                recommendation.recommendations?.user_profile?.tdee ||
+                                recommendation.recommendations?.user_metrics?.tdee || 
+                                recommendation.recommendations?.user_metrics?.total_daily_energy_expenditure ||
+                                0
+                              )} kkal
+                            </StatNumber>
+                          </Stat>
+                        </SimpleGrid>
+                        
+                        {/* View Detail Button */}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          leftIcon={<ViewIcon />}
+                          onClick={async () => {
+                            console.log('🔍 Opening recommendation details:', recommendation);
+                            
+                            // Check if meal plan needs to be generated
+                            const updatedRecommendation = await generateMealPlanForRecommendation(recommendation);
+                            setSelectedRecommendation(updatedRecommendation);
+                            onOpen();
+                          }}
+                        >
+                          Lihat Detail Lengkap
+                        </Button>
+                      </VStack>
+                    </CardBody>
+                  </Card>
+                ))}
+                
                 {/* Show more button if there are more than 5 recommendations */}
                 {recommendationHistory.length > 5 && (
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() =>
-                      setShowRecommendationHistory(!showRecommendationHistory)
-                    }
+                    onClick={() => setShowRecommendationHistory(!showRecommendationHistory)}
                   >
-                    {showRecommendationHistory
-                      ? "Tampilkan Lebih Sedikit"
-                      : `Tampilkan ${
-                          recommendationHistory.length - 5
-                        } Rekomendasi Lainnya`}
+                    {showRecommendationHistory ? 'Tampilkan Lebih Sedikit' : `Tampilkan ${recommendationHistory.length - 5} Rekomendasi Lainnya`}
                   </Button>
                 )}
-
-                {showRecommendationHistory &&
-                  recommendationHistory.length > 5 && (
-                    <VStack spacing={4} align="stretch">
-                      {recommendationHistory
-                        .slice(5)
-                        .map((recommendation, index) => (
-                          <Card key={recommendation.id} variant="outline">
-                            <CardBody>
-                              <VStack align="stretch" spacing={3}>
-                                <HStack justify="space-between">
-                                  <VStack align="start" spacing={1}>
-                                    <Text
-                                      fontWeight="bold"
-                                      fontSize={{ base: "sm", md: "md" }}
-                                    >
-                                      📅{" "}
-                                      {new Date(
-                                        recommendation.createdAt.seconds * 1000
-                                      ).toLocaleDateString("id-ID", {
-                                        weekday: "long",
-                                        year: "numeric",
-                                        month: "long",
-                                        day: "numeric",
-                                      })}
-                                    </Text>
-                                    <Text fontSize="xs" color={mutedTextColor}>
-                                      🕐{" "}
-                                      {new Date(
-                                        recommendation.createdAt.seconds * 1000
-                                      ).toLocaleString("id-ID", {
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                        second: "2-digit",
-                                        timeZoneName: "short",
-                                      })}
-                                    </Text>
-                                  </VStack>
-                                </HStack>
-
-                                <SimpleGrid
-                                  columns={{ base: 1, sm: 3 }}
-                                  spacing={3}
-                                >
-                                  <Stat>
-                                    <StatLabel fontSize="xs">Tujuan</StatLabel>
-                                    <StatNumber fontSize="sm">
-                                      {recommendation.userData.fitness_goal ===
-                                      "Fat Loss"
-                                        ? "Membakar Lemak"
-                                        : recommendation.userData
-                                            .fitness_goal === "Muscle Gain"
-                                        ? "Menambah Otot"
-                                        : recommendation.userData
-                                            .fitness_goal === "Maintenance"
-                                        ? "Mempertahankan"
-                                        : recommendation.userData.fitness_goal}
-                                    </StatNumber>
-                                  </Stat>
-                                  <Stat>
-                                    <StatLabel fontSize="xs">
-                                      Aktivitas
-                                    </StatLabel>
-                                    <StatNumber fontSize="sm">
-                                      {recommendation.userData
-                                        .activity_level === "High Activity"
-                                        ? "Aktivitas Tinggi"
-                                        : recommendation.userData
-                                            .activity_level ===
-                                          "Moderate Activity"
-                                        ? "Aktivitas Sedang"
-                                        : recommendation.userData
-                                            .activity_level === "Low Activity"
-                                        ? "Aktivitas Rendah"
-                                        : recommendation.userData
-                                            .activity_level}
-                                    </StatNumber>
-                                  </Stat>
-                                  <Stat>
-                                    <StatLabel fontSize="xs">BMI</StatLabel>
-                                    <StatNumber fontSize="sm">
-                                      {recommendation.recommendations.user_metrics?.bmi?.toFixed(
-                                        1
-                                      ) ||
-                                        (recommendation.userData?.weight &&
-                                        recommendation.userData?.height
-                                          ? (
-                                              recommendation.userData.weight /
-                                              (recommendation.userData.height /
-                                                100) **
-                                                2
-                                            ).toFixed(1)
-                                          : "N/A")}
-                                    </StatNumber>
-                                  </Stat>
-                                </SimpleGrid>
-
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  leftIcon={<ViewIcon />}
-                                  onClick={async () => {
-                                    console.log(
-                                      "🔍 Opening recommendation details:",
-                                      recommendation
-                                    );
-
-                                    const updatedRecommendation =
-                                      await generateMealPlanForRecommendation(
-                                        recommendation
-                                      );
-                                    setSelectedRecommendation(
-                                      updatedRecommendation
-                                    );
-                                    onOpen();
-                                  }}
-                                >
-                                  Lihat Detail
-                                </Button>
+                
+                {showRecommendationHistory && recommendationHistory.length > 5 && (
+                  <VStack spacing={4} align="stretch">
+                    {recommendationHistory.slice(5).map((recommendation, index) => (
+                      <Card key={recommendation.id} variant="outline">
+                        <CardBody>
+                          <VStack align="stretch" spacing={3}>
+                            <HStack justify="space-between">
+                              <VStack align="start" spacing={1}>
+                                <Text fontWeight="bold" fontSize={{ base: "sm", md: "md" }}>
+                                  📅 {new Date(recommendation.createdAt.seconds * 1000).toLocaleDateString('id-ID', {
+                                    weekday: 'long',
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric'
+                                  })}
+                                </Text>
+                                <Text fontSize="xs" color={mutedTextColor}>
+                                  🕐 {new Date(recommendation.createdAt.seconds * 1000).toLocaleString('id-ID', {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    second: '2-digit',
+                                    timeZoneName: 'short'
+                                  })}
+                                </Text>
                               </VStack>
-                            </CardBody>
-                          </Card>
-                        ))}
-                    </VStack>
-                  )}
+                            </HStack>
+                            
+                            <SimpleGrid columns={{ base: 1, sm: 3 }} spacing={3}>
+                              <Stat>
+                                <StatLabel fontSize="xs">Tujuan</StatLabel>
+                                <StatNumber fontSize="sm">
+                                  {recommendation.userData.fitness_goal === 'Fat Loss' ? 'Membakar Lemak' :
+                                   recommendation.userData.fitness_goal === 'Muscle Gain' ? 'Menambah Otot' :
+                                   recommendation.userData.fitness_goal === 'Maintenance' ? 'Mempertahankan' :
+                                   recommendation.userData.fitness_goal}
+                                </StatNumber>
+                              </Stat>
+                              <Stat>
+                                <StatLabel fontSize="xs">Aktivitas</StatLabel>
+                                <StatNumber fontSize="sm">
+                                  {recommendation.userData.activity_level === 'High Activity' ? 'Aktivitas Tinggi' :
+                                   recommendation.userData.activity_level === 'Moderate Activity' ? 'Aktivitas Sedang' :
+                                   recommendation.userData.activity_level === 'Low Activity' ? 'Aktivitas Rendah' :
+                                   recommendation.userData.activity_level}
+                                </StatNumber>
+                              </Stat>
+                              <Stat>
+                                <StatLabel fontSize="xs">BMI</StatLabel>
+                                <StatNumber fontSize="sm">
+                                  {recommendation.recommendations.user_metrics?.bmi?.toFixed(1) || 
+                                   (recommendation.userData?.weight && recommendation.userData?.height ? 
+                                     (recommendation.userData.weight / ((recommendation.userData.height / 100) ** 2)).toFixed(1) : 
+                                     'N/A')}
+                                </StatNumber>
+                              </Stat>
+                            </SimpleGrid>
+                            
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              leftIcon={<ViewIcon />}
+                              onClick={async () => {
+                                console.log('🔍 Opening recommendation details:', recommendation);
+                                
+                                const updatedRecommendation = await generateMealPlanForRecommendation(recommendation);
+                                setSelectedRecommendation(updatedRecommendation);
+                                onOpen();
+                              }}
+                            >
+                              Lihat Detail
+                            </Button>
+                          </VStack>
+                        </CardBody>
+                      </Card>
+                    ))}
+                  </VStack>
+                )}
               </VStack>
             )}
           </CardBody>
         </Card>
 
-        {/* Recommendation Detail Modal */}
-        <Modal
-          isOpen={isOpen}
-          onClose={onClose}
-          size={{ base: "full", md: "xl" }}
-        >
-          <ModalOverlay />
-          <ModalContent>
-            <ModalHeader>📋 Detail Rekomendasi</ModalHeader>
-            <ModalCloseButton />
-            <ModalBody pb={6}>
-              {selectedRecommendation && (
-                <VStack spacing={6} align="stretch">
-                  {/* Header dengan timestamp lengkap */}
-                  <Card variant="outline" bg="blue.50" borderColor="blue.200">
-                    <CardHeader>
-                      <Heading size="md">📅 Informasi Rekomendasi</Heading>
-                    </CardHeader>
-                    <CardBody>
-                      <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-                        <Stat>
-                          <StatLabel>Dibuat pada</StatLabel>
-                          <StatNumber fontSize="md">
-                            {new Date(
-                              selectedRecommendation.createdAt.seconds * 1000
-                            ).toLocaleDateString("id-ID", {
-                              weekday: "long",
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                            })}
-                          </StatNumber>
-                          <StatHelpText>
-                            {new Date(
-                              selectedRecommendation.createdAt.seconds * 1000
-                            ).toLocaleTimeString("id-ID", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                              second: "2-digit",
-                            })}
-                          </StatHelpText>
-                        </Stat>
-                        <Stat>
-                          <StatLabel>Status</StatLabel>
-                          <StatNumber fontSize="md">
-                            {selectedRecommendation.isActive
-                              ? "✅ Aktif"
-                              : "📋 Tersimpan"}
-                          </StatNumber>
-                          <StatHelpText>
-                            ID: {selectedRecommendation.id?.substring(0, 8)}...
-                          </StatHelpText>
-                        </Stat>
-                      </SimpleGrid>
-                    </CardBody>
-                  </Card>
+        {/* Tips Section */}
+        <Card bg={cardBg} borderWidth="1px" borderColor={borderColor}>
+          <CardHeader>
+            <Heading size={{ base: "md", md: "lg" }}>💡 Tips Hari Ini</Heading>
+          </CardHeader>
+          <CardBody>
+            <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
+              <VStack align="start" spacing={3} p={4} bg="blue.50" borderRadius="md">
+                <Text fontSize="2xl">🕐</Text>
+                <Text fontWeight="bold" fontSize={{ base: "sm", md: "md" }}>
+                  Waktu Terbaik Berolahraga
+                </Text>
+                <Text fontSize="sm" color={mutedTextColor}>
+                  Pagi hari (06:00-08:00) atau sore (16:00-18:00) adalah waktu optimal untuk berolahraga.
+                </Text>
+              </VStack>
+              
+              <VStack align="start" spacing={3} p={4} bg="green.50" borderRadius="md">
+                <Text fontSize="2xl">🥗</Text>
+                <Text fontWeight="bold" fontSize={{ base: "sm", md: "md" }}>
+                  Nutrisi Seimbang
+                </Text>
+                <Text fontSize="sm" color={mutedTextColor}>
+                  Pastikan setiap makanan mengandung protein, karbohidrat, dan sayuran untuk nutrisi optimal.
+                </Text>
+              </VStack>
+              
+              <VStack align="start" spacing={3} p={4} bg="purple.50" borderRadius="md">
+                <Text fontSize="2xl">😴</Text>
+                <Text fontWeight="bold" fontSize={{ base: "sm", md: "md" }}>
+                  Istirahat Cukup
+                </Text>
+                <Text fontSize="sm" color={mutedTextColor}>
+                  Tidur 7-9 jam per malam sangat penting untuk pemulihan otot dan metabolisme yang baik.
+                </Text>
+              </VStack>
+            </SimpleGrid>
+          </CardBody>
+        </Card>
+      </VStack>
 
-                  {/* Complete User Profile */}
+      {/* Recommendation Detail Modal */}
+      <Modal isOpen={isOpen} onClose={onClose} size={{ base: "full", md: "xl" }}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>📋 Detail Rekomendasi</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody pb={6}>
+            {selectedRecommendation && (
+              <VStack spacing={6} align="stretch">
+                {/* Header dengan timestamp lengkap */}
+                <Card variant="outline" bg="blue.50" borderColor="blue.200">
+                  <CardHeader>
+                    <Heading size="md">📅 Informasi Rekomendasi</Heading>
+                  </CardHeader>
+                  <CardBody>
+                    <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                      <Stat>
+                        <StatLabel>Dibuat pada</StatLabel>
+                        <StatNumber fontSize="md">
+                          {new Date(selectedRecommendation.createdAt.seconds * 1000).toLocaleDateString('id-ID', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                        </StatNumber>
+                        <StatHelpText>
+                          {new Date(selectedRecommendation.createdAt.seconds * 1000).toLocaleTimeString('id-ID', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit'
+                          })}
+                        </StatHelpText>
+                      </Stat>
+                      <Stat>
+                        <StatLabel>Status</StatLabel>
+                        <StatNumber fontSize="md">
+                          {selectedRecommendation.isActive ? '✅ Aktif' : '📋 Tersimpan'}
+                        </StatNumber>
+                        <StatHelpText>
+                          ID: {selectedRecommendation.id?.substring(0, 8)}...
+                        </StatHelpText>
+                      </Stat>
+                    </SimpleGrid>
+                  </CardBody>
+                </Card>
+
+                {/* Complete User Profile */}
+                <Card variant="outline">
+                  <CardHeader>
+                    <Heading size="md">👤 Profil Anda</Heading>
+                  </CardHeader>
+                  <CardBody>
+                    <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
+                      <Stat>
+                        <StatLabel>Usia</StatLabel>
+                        <StatNumber>{selectedRecommendation.userData.age} tahun</StatNumber>
+                      </Stat>
+                      <Stat>
+                        <StatLabel>Jenis Kelamin</StatLabel>
+                        <StatNumber>{selectedRecommendation.userData.gender === 'Male' ? 'Pria' : 'Wanita'}</StatNumber>
+                      </Stat>
+                      <Stat>
+                        <StatLabel>Tinggi</StatLabel>
+                        <StatNumber>{selectedRecommendation.userData.height} cm</StatNumber>
+                      </Stat>
+                      <Stat>
+                        <StatLabel>Berat</StatLabel>
+                        <StatNumber>{selectedRecommendation.userData.weight} kg</StatNumber>
+                      </Stat>
+                      <Stat>
+                        <StatLabel>Tujuan</StatLabel>
+                        <StatNumber>
+                          {selectedRecommendation.userData.fitness_goal === 'Fat Loss' ? 'Membakar Lemak' :
+                           selectedRecommendation.userData.fitness_goal === 'Muscle Gain' ? 'Menambah Otot' :
+                           selectedRecommendation.userData.fitness_goal === 'Maintenance' ? 'Mempertahankan' :
+                           selectedRecommendation.userData.fitness_goal}
+                        </StatNumber>
+                      </Stat>
+                      <Stat>
+                        <StatLabel>Tingkat Aktivitas</StatLabel>
+                        <StatNumber>
+                          {selectedRecommendation.userData.activity_level === 'High Activity' ? 'Aktivitas Tinggi' :
+                           selectedRecommendation.userData.activity_level === 'Moderate Activity' ? 'Aktivitas Sedang' :
+                           selectedRecommendation.userData.activity_level === 'Low Activity' ? 'Aktivitas Rendah' :
+                           selectedRecommendation.userData.activity_level}
+                        </StatNumber>
+                      </Stat>
+                    </SimpleGrid>
+                  </CardBody>
+                </Card>
+
+                {/* Body Analysis */}
+                {(selectedRecommendation.userProfile || selectedRecommendation.recommendations?.user_profile || selectedRecommendation.recommendations?.user_metrics) && (
                   <Card variant="outline">
                     <CardHeader>
-                      <Heading size="md">👤 Profil Anda</Heading>
+                      <Heading size="md">📊 Analisis Tubuh Anda</Heading>
                     </CardHeader>
                     <CardBody>
-                      <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
-                        <Stat>
-                          <StatLabel>Usia</StatLabel>
-                          <StatNumber>
-                            {selectedRecommendation.userData.age} tahun
-                          </StatNumber>
-                        </Stat>
-                        <Stat>
-                          <StatLabel>Jenis Kelamin</StatLabel>
-                          <StatNumber>
-                            {selectedRecommendation.userData.gender === "Male"
-                              ? "Pria"
-                              : "Wanita"}
-                          </StatNumber>
-                        </Stat>
-                        <Stat>
-                          <StatLabel>Tinggi</StatLabel>
-                          <StatNumber>
-                            {selectedRecommendation.userData.height} cm
-                          </StatNumber>
-                        </Stat>
-                        <Stat>
-                          <StatLabel>Berat</StatLabel>
-                          <StatNumber>
-                            {selectedRecommendation.userData.weight} kg
-                          </StatNumber>
-                        </Stat>
-                        <Stat>
-                          <StatLabel>Tujuan</StatLabel>
-                          <StatNumber>
-                            {selectedRecommendation.userData.fitness_goal ===
-                            "Fat Loss"
-                              ? "Membakar Lemak"
-                              : selectedRecommendation.userData.fitness_goal ===
-                                "Muscle Gain"
-                              ? "Menambah Otot"
-                              : selectedRecommendation.userData.fitness_goal ===
-                                "Maintenance"
-                              ? "Mempertahankan"
-                              : selectedRecommendation.userData.fitness_goal}
-                          </StatNumber>
-                        </Stat>
-                        <Stat>
-                          <StatLabel>Tingkat Aktivitas</StatLabel>
-                          <StatNumber>
-                            {selectedRecommendation.userData.activity_level ===
-                            "High Activity"
-                              ? "Aktivitas Tinggi"
-                              : selectedRecommendation.userData
-                                  .activity_level === "Moderate Activity"
-                              ? "Aktivitas Sedang"
-                              : selectedRecommendation.userData
-                                  .activity_level === "Low Activity"
-                              ? "Aktivitas Rendah"
-                              : selectedRecommendation.userData.activity_level}
-                          </StatNumber>
-                        </Stat>
-                      </SimpleGrid>
-                    </CardBody>
-                  </Card>
-
-                  {/* Body Analysis */}
-                  {(selectedRecommendation.userProfile ||
-                    selectedRecommendation.recommendations?.user_profile ||
-                    selectedRecommendation.recommendations?.user_metrics) && (
-                    <Card variant="outline">
-                      <CardHeader>
-                        <Heading size="md">📊 Analisis Tubuh Anda</Heading>
-                      </CardHeader>
-                      <CardBody>
-                        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
-                          {" "}
-                          <Stat>
+                      <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>                          <Stat>
                             <StatLabel>BMI</StatLabel>
                             <StatNumber>
                               {(() => {
-                                const bmi =
-                                  selectedRecommendation.userProfile?.bmi ||
-                                  selectedRecommendation.recommendations
-                                    ?.user_metrics?.bmi;
+                                const bmi = selectedRecommendation.userProfile?.bmi || 
+                                           selectedRecommendation.recommendations?.user_metrics?.bmi;
                                 if (bmi) {
                                   return bmi.toFixed(1);
                                 }
                                 // Calculate from userData if not available
-                                if (
-                                  selectedRecommendation.userData?.weight &&
-                                  selectedRecommendation.userData?.height
-                                ) {
-                                  const calculatedBMI =
-                                    selectedRecommendation.userData.weight /
-                                    (selectedRecommendation.userData.height /
-                                      100) **
-                                      2;
+                                if (selectedRecommendation.userData?.weight && selectedRecommendation.userData?.height) {
+                                  const calculatedBMI = selectedRecommendation.userData.weight / ((selectedRecommendation.userData.height / 100) ** 2);
                                   return calculatedBMI.toFixed(1);
                                 }
-                                return "N/A";
+                                return 'N/A';
                               })()}
                             </StatNumber>
                             <StatHelpText>
-                              {selectedRecommendation.userProfile
-                                ?.bmi_category ||
-                                selectedRecommendation.recommendations
-                                  ?.user_metrics?.bmi_category ||
-                                "Kategori BMI"}
+                              {selectedRecommendation.userProfile?.bmi_category || 
+                               selectedRecommendation.recommendations?.user_metrics?.bmi_category ||
+                               'Kategori BMI'}
                             </StatHelpText>
                           </Stat>
+                        <Stat>
+                          <StatLabel>BMR</StatLabel>
+                          <StatNumber>
+                            {Math.round(
+                              selectedRecommendation.userProfile?.bmr || 
+                              selectedRecommendation.recommendations?.user_profile?.bmr ||
+                              selectedRecommendation.recommendations?.user_metrics?.bmr || 
+                              selectedRecommendation.recommendations?.user_metrics?.basal_metabolic_rate ||
+                              0
+                            )} kkal
+                          </StatNumber>
+                          <StatHelpText>Kalori Basal</StatHelpText>
+                        </Stat>
+                        <Stat>
+                          <StatLabel>TDEE</StatLabel>
+                          <StatNumber>
+                            {Math.round(
+                              selectedRecommendation.userProfile?.tdee || 
+                              selectedRecommendation.recommendations?.user_profile?.tdee ||
+                              selectedRecommendation.recommendations?.user_metrics?.tdee || 
+                              selectedRecommendation.recommendations?.user_metrics?.total_daily_energy_expenditure ||
+                              0
+                            )} kkal
+                          </StatNumber>
+                          <StatHelpText>Total Pengeluaran Energi</StatHelpText>
+                        </Stat>
+                        <Stat>
+                          <StatLabel>Kategori BMI</StatLabel>
+                          <StatNumber>
+                            {(() => {
+                              const category = selectedRecommendation.userProfile?.bmi_category || 
+                                              selectedRecommendation.recommendations?.user_metrics?.bmi_category ||
+                                              'Unknown';
+                              
+                              return category === 'Normal' ? 'Normal' :
+                                     category === 'Overweight' ? 'Kelebihan Berat' :
+                                     category === 'Obese' ? 'Obesitas' :
+                                     category === 'Underweight' ? 'Kekurangan Berat' :
+                                     category;
+                            })()}
+                          </StatNumber>
+                        </Stat>
+                      </SimpleGrid>
+                    </CardBody>
+                  </Card>
+                )}
+
+                {/* AI Confidence */}
+                {(selectedRecommendation.recommendations.enhanced_confidence || selectedRecommendation.recommendations.model_confidence) && (
+                  <Card variant="outline">
+                    <CardHeader>
+                      <Heading size="md">🎯 Tingkat Kepercayaan AI</Heading>
+                    </CardHeader>
+                    <CardBody>
+                      <VStack spacing={4} align="stretch">
+                        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
                           <Stat>
-                            <StatLabel>BMR</StatLabel>
-                            <StatNumber>
-                              {Math.round(
-                                selectedRecommendation.userProfile?.bmr ||
-                                  selectedRecommendation.recommendations
-                                    ?.user_profile?.bmr ||
-                                  selectedRecommendation.recommendations
-                                    ?.user_metrics?.bmr ||
-                                  selectedRecommendation.recommendations
-                                    ?.user_metrics?.basal_metabolic_rate ||
-                                  0
-                              )}{" "}
-                              kkal
-                            </StatNumber>
-                            <StatHelpText>Kalori Basal</StatHelpText>
-                          </Stat>
-                          <Stat>
-                            <StatLabel>TDEE</StatLabel>
-                            <StatNumber>
-                              {Math.round(
-                                selectedRecommendation.userProfile?.tdee ||
-                                  selectedRecommendation.recommendations
-                                    ?.user_profile?.tdee ||
-                                  selectedRecommendation.recommendations
-                                    ?.user_metrics?.tdee ||
-                                  selectedRecommendation.recommendations
-                                    ?.user_metrics
-                                    ?.total_daily_energy_expenditure ||
-                                  0
-                              )}{" "}
-                              kkal
-                            </StatNumber>
-                            <StatHelpText>
-                              Total Pengeluaran Energi
-                            </StatHelpText>
-                          </Stat>
-                          <Stat>
-                            <StatLabel>Kategori BMI</StatLabel>
-                            <StatNumber>
+                            <StatLabel>Kepercayaan Keseluruhan</StatLabel>
+                            <StatNumber color="green.500">
                               {(() => {
-                                const category =
-                                  selectedRecommendation.userProfile
-                                    ?.bmi_category ||
-                                  selectedRecommendation.recommendations
-                                    ?.user_metrics?.bmi_category ||
-                                  "Unknown";
-
-                                return category === "Normal"
-                                  ? "Normal"
-                                  : category === "Overweight"
-                                  ? "Kelebihan Berat"
-                                  : category === "Obese"
-                                  ? "Obesitas"
-                                  : category === "Underweight"
-                                  ? "Kekurangan Berat"
-                                  : category;
-                              })()}
-                            </StatNumber>
-                          </Stat>
-                        </SimpleGrid>
-                      </CardBody>
-                    </Card>
-                  )}
-
-                  {/* Workout Recommendation Section */}
-                  {(selectedRecommendation.recommendations
-                    .workout_recommendation ||
-                    selectedRecommendation.recommendations.predictions
-                      ?.workout_template) && (
-                    <Card variant="outline">
-                      <CardHeader>
-                        <HStack justify="space-between">
-                          <Heading size="md">🏋️ Program Latihan Harian</Heading>
-                          {(selectedRecommendation.recommendations
-                            .workout_recommendation?.template_id ||
-                            selectedRecommendation.recommendations.predictions
-                              ?.workout_template?.template_id) && (
-                            <Badge colorScheme="blue" fontSize="0.8em">
-                              Template ID:{" "}
-                              {selectedRecommendation.recommendations
-                                .workout_recommendation?.template_id ||
-                                selectedRecommendation.recommendations
-                                  .predictions?.workout_template?.template_id}
-                            </Badge>
-                          )}
-                        </HStack>
-                      </CardHeader>
-                      <CardBody>
-                        <VStack spacing={4} align="stretch">
-                          <Text fontWeight="bold" fontSize="md">
-                            📅 Jadwal Mingguan
-                          </Text>
-
-                          {(() => {
-                            // ONLY USE SAVED WORKOUT DATA - NO CALCULATIONS
-                            const workout =
-                              selectedRecommendation.recommendations
-                                .workout_recommendation ||
-                              selectedRecommendation.recommendations.predictions
-                                ?.workout_template;
-
-                            if (!workout) {
-                              return (
-                                <Alert status="warning" borderRadius="md">
-                                  <AlertIcon />
-                                  <Box>
-                                    <AlertTitle fontSize="sm">
-                                      Data Workout Tidak Tersimpan
-                                    </AlertTitle>
-                                    <AlertDescription fontSize="xs">
-                                      Data program latihan dari rekomendasi ini
-                                      tidak tersimpan dengan benar.
-                                    </AlertDescription>
-                                  </Box>
-                                </Alert>
-                              );
-                            }
-
-                            console.log(
-                              "🏋️ Progress: Using saved workout data:",
-                              workout
-                            );
-
-                            return (
-                              <>
-                                <SimpleGrid
-                                  columns={{ base: 1, md: 2 }}
-                                  spacing={4}
-                                >
-                                  <Stat>
-                                    <StatLabel>Jenis Olahraga</StatLabel>
-                                    <StatNumber fontSize="sm">
-                                      {workout.workout_type ===
-                                      "Upper/Lower Split"
-                                        ? "Split Atas/Bawah"
-                                        : workout.workout_type ===
-                                          "Push/Pull/Legs"
-                                        ? "Push/Pull/Legs"
-                                        : workout.workout_type === "Full Body"
-                                        ? "Full Body"
-                                        : workout.workout_type ||
-                                          "Tidak tersedia"}
-                                    </StatNumber>
-                                  </Stat>
-                                  <Stat>
-                                    <StatLabel>Hari per Minggu</StatLabel>
-                                    <StatNumber fontSize="sm">
-                                      {workout.days_per_week ||
-                                        "Tidak tersedia"}{" "}
-                                      hari
-                                    </StatNumber>
-                                  </Stat>
-                                  <Stat>
-                                    <StatLabel>Set Harian</StatLabel>
-                                    <StatNumber fontSize="sm">
-                                      {workout.sets_per_exercise ||
-                                        "Tidak tersedia"}{" "}
-                                      set
-                                    </StatNumber>
-                                  </Stat>
-                                  <Stat>
-                                    <StatLabel>Latihan per Sesi</StatLabel>
-                                    <StatNumber fontSize="sm">
-                                      {workout.exercises_per_session ||
-                                        "Tidak tersedia"}{" "}
-                                      latihan
-                                    </StatNumber>
-                                  </Stat>
-                                </SimpleGrid>
-
-                                {/* Cardio Section */}
-                                {workout.cardio_minutes_per_day > 0 && (
-                                  <>
-                                    <Text
-                                      fontWeight="bold"
-                                      fontSize="md"
-                                      mt={4}
-                                    >
-                                      🏃 Kardio Harian
-                                    </Text>
-                                    <SimpleGrid
-                                      columns={{ base: 1, md: 2 }}
-                                      spacing={4}
-                                    >
-                                      <Stat>
-                                        <StatLabel>Durasi per Hari</StatLabel>
-                                        <StatNumber fontSize="sm">
-                                          {workout.cardio_minutes_per_day} menit
-                                        </StatNumber>
-                                      </Stat>
-                                      <Stat>
-                                        <StatLabel>Sesi per Hari</StatLabel>
-                                        <StatNumber fontSize="sm">
-                                          {workout.cardio_sessions_per_day || 1}{" "}
-                                          sesi
-                                        </StatNumber>
-                                      </Stat>
-                                    </SimpleGrid>
-                                  </>
-                                )}
-
-                                {/* Workout schedule */}
-                                {(workout.workout_schedule ||
-                                  workout.schedule ||
-                                  workout.weekly_schedule) && (
-                                  <Box mt={4}>
-                                    <Text fontWeight="bold" mb={2}>
-                                      📋 Jadwal yang Disarankan
-                                    </Text>
-                                    <Box
-                                      p={3}
-                                      bg="blue.50"
-                                      borderRadius="md"
-                                      border="1px"
-                                      borderColor="blue.200"
-                                    >
-                                      <Text
-                                        fontFamily="mono"
-                                        fontSize="lg"
-                                        textAlign="center"
-                                        fontWeight="bold"
-                                      >
-                                        {workout.workout_schedule ||
-                                          workout.schedule ||
-                                          workout.weekly_schedule}
-                                      </Text>
-                                      <Text
-                                        fontSize="xs"
-                                        color="gray.600"
-                                        mt={2}
-                                        textAlign="center"
-                                      >
-                                        W = Hari latihan, X = Hari istirahat
-                                      </Text>
-                                    </Box>
-                                  </Box>
-                                )}
-
-                                {/* Workout Type Explanations */}
-                                <Box mt={4}>
-                                  <Text fontWeight="bold" mb={3}>
-                                    📚 Penjelasan Jenis Latihan
-                                  </Text>
-                                  <VStack spacing={3} align="stretch">
-                                    <Box p={3} bg="gray.50" borderRadius="md">
-                                      <Text fontWeight="bold" fontSize="sm">
-                                        🏋️ Full Body Workouts
-                                      </Text>
-                                      <Text
-                                        fontSize="xs"
-                                        color="gray.600"
-                                        mt={1}
-                                      >
-                                        Melatih semua kelompok otot utama dalam
-                                        setiap sesi. Cocok untuk pemula dan
-                                        orang dengan waktu terbatas.
-                                      </Text>
-                                    </Box>
-                                    <Box p={3} bg="gray.50" borderRadius="md">
-                                      <Text fontWeight="bold" fontSize="sm">
-                                        🔄 Upper/Lower Split
-                                      </Text>
-                                      <Text
-                                        fontSize="xs"
-                                        color="gray.600"
-                                        mt={1}
-                                      >
-                                        Split latihan atas dan bawah tubuh.
-                                        Cocok untuk atlet menengah dengan
-                                        ketersediaan waktu sedang.
-                                      </Text>
-                                    </Box>
-                                    <Box p={3} bg="gray.50" borderRadius="md">
-                                      <Text fontWeight="bold" fontSize="sm">
-                                        💪 Push/Pull/Legs
-                                      </Text>
-                                      <Text
-                                        fontSize="xs"
-                                        color="gray.600"
-                                        mt={1}
-                                      >
-                                        Split berdasarkan gerakan dorong, tarik,
-                                        dan kaki. Cocok untuk atlet lanjutan.
-                                      </Text>
-                                    </Box>
-                                  </VStack>
-                                </Box>
-                              </>
-                            );
-                          })()}
-                        </VStack>
-                      </CardBody>
-                    </Card>
-                  )}
-
-                  {/* Nutrition Recommendation Section - Always show if we have recommendations */}
-                  {selectedRecommendation.recommendations && (
-                    <Card variant="outline">
-                      <CardHeader>
-                        <HStack justify="space-between">
-                          <Heading size="md">🍎 Program Nutrisi Harian</Heading>
-                          {(() => {
-                            const templateId =
-                              selectedRecommendation.recommendations
-                                .nutrition_recommendation?.template_id ||
-                              selectedRecommendation.recommendations.predictions
-                                ?.nutrition_template?.template_id ||
-                              selectedRecommendation.recommendations
-                                .predicted_nutrition_template_id;
-                            return (
-                              templateId && (
-                                <Badge colorScheme="green" fontSize="0.8em">
-                                  Template ID: {templateId}
-                                </Badge>
-                              )
-                            );
-                          })()}
-                        </HStack>
-                      </CardHeader>
-                      <CardBody>
-                        <VStack spacing={4} align="stretch">
-                          <Text fontWeight="bold" fontSize="md">
-                            🎯 Target Harian Berdasarkan Template
-                          </Text>
-
-                          {(() => {
-                            // Use the same calculation logic as RecommendationDisplay
-                            const nutrition =
-                              selectedRecommendation.recommendations
-                                .nutrition_recommendation ||
-                              selectedRecommendation.recommendations.predictions
-                                ?.nutrition_template ||
-                              selectedRecommendation.recommendations
-                                .nutrition_template;
-
-                            const weight = parseFloat(
-                              selectedRecommendation.userData.weight
-                            );
-                            const userProfile =
-                              selectedRecommendation.userProfile ||
-                              selectedRecommendation.recommendations
-                                ?.user_profile ||
-                              selectedRecommendation.recommendations
-                                ?.user_metrics;
-                            const tdee =
-                              userProfile?.tdee ||
-                              userProfile?.total_daily_energy_expenditure ||
-                              2000;
-
-                            let dailyMacros = null;
-
-                            if (nutrition) {
-                              // Priority 1: Use pre-calculated values from the API if available
-                              if (
-                                nutrition.target_calories &&
-                                nutrition.target_protein &&
-                                nutrition.target_carbs &&
-                                nutrition.target_fat
-                              ) {
-                                dailyMacros = {
-                                  calories: Math.round(
-                                    nutrition.target_calories
-                                  ),
-                                  protein: Math.round(nutrition.target_protein),
-                                  carbs: Math.round(nutrition.target_carbs),
-                                  fat: Math.round(nutrition.target_fat),
-                                };
-                              }
-                              // Priority 2: Use template multipliers if available
-                              else if (
-                                nutrition.caloric_intake_multiplier &&
-                                nutrition.protein_per_kg &&
-                                nutrition.carbs_per_kg &&
-                                nutrition.fat_per_kg
-                              ) {
-                                dailyMacros = {
-                                  calories: Math.round(
-                                    tdee * nutrition.caloric_intake_multiplier
-                                  ),
-                                  protein: Math.round(
-                                    weight * nutrition.protein_per_kg
-                                  ),
-                                  carbs: Math.round(
-                                    weight * nutrition.carbs_per_kg
-                                  ),
-                                  fat: Math.round(
-                                    weight * nutrition.fat_per_kg
-                                  ),
-                                };
-                              }
-                              // Fallback: Use standard macro calculations for different goals
-                              else {
-                                let calories, protein, carbs, fat;
-
-                                if (
-                                  selectedRecommendation.userData
-                                    .fitness_goal === "Fat Loss"
-                                ) {
-                                  calories = Math.round(tdee * 0.8); // 20% deficit
-                                  protein = Math.round(weight * 2.3);
-                                  carbs = Math.round(weight * 1.8);
-                                  fat = Math.round(weight * 1.0);
-                                } else if (
-                                  selectedRecommendation.userData
-                                    .fitness_goal === "Muscle Gain"
-                                ) {
-                                  calories = Math.round(tdee * 1.1); // 10% surplus
-                                  protein = Math.round(weight * 2.1);
-                                  carbs = Math.round(weight * 4.25);
-                                  fat = Math.round(weight * 1.0);
-                                } else {
-                                  // Maintenance
-                                  calories = Math.round(tdee * 0.95);
-                                  protein = Math.round(weight * 1.8);
-                                  carbs = Math.round(weight * 4.5);
-                                  fat = Math.round(weight * 1.0);
+                                if (selectedRecommendation.recommendations.enhanced_confidence?.confidence_score) {
+                                  return Math.round(selectedRecommendation.recommendations.enhanced_confidence.confidence_score * 100);
                                 }
+                                if (selectedRecommendation.recommendations.model_confidence) {
+                                  const avgConfidence = (selectedRecommendation.recommendations.model_confidence.nutrition_confidence + 
+                                                       selectedRecommendation.recommendations.model_confidence.workout_confidence) / 2;
+                                  return Math.round(avgConfidence * 100);
+                                }
+                                return 40;
+                              })()}%
+                            </StatNumber>
+                            <StatHelpText>
+                              <Badge colorScheme="green">Tinggi</Badge>
+                            </StatHelpText>
+                          </Stat>
+                          {selectedRecommendation.recommendations.model_confidence && (
+                            <>
+                              <Stat>
+                                <StatLabel>Kepercayaan Nutrisi</StatLabel>
+                                <StatNumber color="blue.500">
+                                  {Math.round(selectedRecommendation.recommendations.model_confidence.nutrition_confidence * 100)}%
+                                </StatNumber>
+                                <StatHelpText>
+                                  <Text fontSize="xs" color="gray.500">decreased by</Text>
+                                </StatHelpText>
+                              </Stat>
+                              <Stat>
+                                <StatLabel>Kepercayaan Workout</StatLabel>
+                                <StatNumber color="purple.500">
+                                  {Math.round(selectedRecommendation.recommendations.model_confidence.workout_confidence * 100)}%
+                                </StatNumber>
+                                <StatHelpText>
+                                  <Text fontSize="xs" color="gray.500">decreased by</Text>
+                                </StatHelpText>
+                              </Stat>
+                            </>
+                          )}
+                        </SimpleGrid>
+                        
+                        <Alert status="info" borderRadius="md">
+                          <AlertIcon />
+                          <Box>
+                            <AlertTitle>Level Kepercayaan</AlertTitle>
+                            <AlertDescription>
+                              {(() => {
+                                const explanation = selectedRecommendation.recommendations.enhanced_confidence?.explanation;
+                                if (explanation === 'Based on high activity and fat loss goal') return 'Berdasarkan aktivitas tinggi dan tujuan membakar lemak';
+                                if (explanation === 'Based on moderate activity and muscle gain goal') return 'Berdasarkan aktivitas sedang dan tujuan menambah massa otot';
+                                if (explanation === 'Based on low activity and maintenance goal') return 'Berdasarkan aktivitas rendah dan tujuan mempertahankan berat';
+                                if (explanation === 'Based on moderate activity and maintenance goal') return 'Berdasarkan aktivitas sedang dan tujuan mempertahankan berat';
+                                if (explanation === 'Based on high activity and muscle gain goal') return 'Berdasarkan aktivitas tinggi dan tujuan menambah massa otot';
+                                if (explanation === 'Based on low activity and fat loss goal') return 'Berdasarkan aktivitas rendah dan tujuan membakar lemak';
+                                return explanation || 'Berdasarkan aktivitas tinggi dan tujuan membakar lemak';
+                              })()}
+                            </AlertDescription>
+                          </Box>
+                        </Alert>
+                      </VStack>
+                    </CardBody>
+                  </Card>
+                )}
 
-                                dailyMacros = { calories, protein, carbs, fat };
-                              }
-                            }
-
-                            if (!dailyMacros) {
-                              return (
-                                <Alert status="warning" borderRadius="md">
-                                  <AlertIcon />
-                                  <Box>
-                                    <AlertTitle fontSize="sm">
-                                      Data Nutrisi Tidak Tersedia
-                                    </AlertTitle>
-                                    <AlertDescription fontSize="xs">
-                                      Data nutrisi dari rekomendasi ini tidak
-                                      dapat dihitung.
-                                    </AlertDescription>
-                                  </Box>
-                                </Alert>
-                              );
-                            }
-
+                {/* Workout Recommendation Section */}
+                {(selectedRecommendation.recommendations.workout_recommendation || 
+                  selectedRecommendation.recommendations.predictions?.workout_template) && (
+                  <Card variant="outline">
+                    <CardHeader>
+                      <HStack justify="space-between">
+                        <Heading size="md">🏋️ Program Latihan Harian</Heading>
+                        {(selectedRecommendation.recommendations.workout_recommendation?.template_id || 
+                          selectedRecommendation.recommendations.predictions?.workout_template?.template_id) && (
+                          <Badge colorScheme="blue" fontSize="0.8em">
+                            Template ID: {selectedRecommendation.recommendations.workout_recommendation?.template_id || 
+                                         selectedRecommendation.recommendations.predictions?.workout_template?.template_id}
+                          </Badge>
+                        )}
+                      </HStack>
+                    </CardHeader>
+                    <CardBody>
+                      <VStack spacing={4} align="stretch">
+                        <Text fontWeight="bold" fontSize="md">📅 Jadwal Mingguan</Text>
+                        
+                        {(() => {
+                          // ONLY USE SAVED WORKOUT DATA - NO CALCULATIONS
+                          const workout = selectedRecommendation.recommendations.workout_recommendation || 
+                                         selectedRecommendation.recommendations.predictions?.workout_template;
+                          
+                          if (!workout) {
                             return (
-                              <>
-                                <SimpleGrid
-                                  columns={{ base: 2, md: 4 }}
-                                  spacing={4}
-                                >
-                                  <Stat>
-                                    <StatLabel>🔥 Kalori</StatLabel>
-                                    <StatNumber fontSize="sm">
-                                      {dailyMacros.calories} kkal
-                                    </StatNumber>
-                                    <StatHelpText fontSize="xs">
-                                      <Badge
-                                        colorScheme={
-                                          selectedRecommendation.userData
-                                            ?.fitness_goal === "Fat Loss"
-                                            ? "red"
-                                            : selectedRecommendation.userData
-                                                ?.fitness_goal === "Muscle Gain"
-                                            ? "green"
-                                            : "blue"
-                                        }
-                                      >
-                                        {selectedRecommendation.userData
-                                          ?.fitness_goal === "Fat Loss"
-                                          ? `Defisit: ${Math.round(
-                                              (1 -
-                                                dailyMacros.calories / tdee) *
-                                                100
-                                            )}%`
-                                          : selectedRecommendation.userData
-                                              ?.fitness_goal === "Muscle Gain"
-                                          ? `Surplus: +${Math.round(
-                                              (dailyMacros.calories / tdee -
-                                                1) *
-                                                100
-                                            )}%`
-                                          : "Maintenance"}
-                                      </Badge>
-                                    </StatHelpText>
-                                  </Stat>
-                                  <Stat>
-                                    <StatLabel>🥩 Protein</StatLabel>
-                                    <StatNumber fontSize="sm">
-                                      {dailyMacros.protein}g
-                                    </StatNumber>
-                                  </Stat>
-                                  <Stat>
-                                    <StatLabel>🍞 Karbohidrat</StatLabel>
-                                    <StatNumber fontSize="sm">
-                                      {dailyMacros.carbs}g
-                                    </StatNumber>
-                                  </Stat>
-                                  <Stat>
-                                    <StatLabel>🥑 Lemak</StatLabel>
-                                    <StatNumber fontSize="sm">
-                                      {dailyMacros.fat}g
-                                    </StatNumber>
-                                  </Stat>
-                                </SimpleGrid>
-                              </>
+                              <Alert status="warning" borderRadius="md">
+                                <AlertIcon />
+                                <Box>
+                                  <AlertTitle fontSize="sm">Data Workout Tidak Tersimpan</AlertTitle>
+                                  <AlertDescription fontSize="xs">
+                                    Data program latihan dari rekomendasi ini tidak tersimpan dengan benar.
+                                  </AlertDescription>
+                                </Box>
+                              </Alert>
                             );
-                          })()}
-                        </VStack>
-                      </CardBody>
-                    </Card>
-                  )}
-                </VStack>
-              )}
-            </ModalBody>
-          </ModalContent>
-        </Modal>
-      </VStack>
+                          }
+                          
+                          console.log('🏋️ Progress: Using saved workout data:', workout);
+                          
+                          return (
+                            <>
+                              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                                <Stat>
+                                  <StatLabel>Jenis Olahraga</StatLabel>
+                                  <StatNumber fontSize="sm">
+                                    {workout.workout_type === 'Upper/Lower Split' ? 'Split Atas/Bawah' :
+                                     workout.workout_type === 'Push/Pull/Legs' ? 'Push/Pull/Legs' :
+                                     workout.workout_type === 'Full Body' ? 'Full Body' :
+                                     workout.workout_type || 'Tidak tersedia'}
+                                  </StatNumber>
+                                </Stat>
+                                <Stat>
+                                  <StatLabel>Hari per Minggu</StatLabel>
+                                  <StatNumber fontSize="sm">{workout.days_per_week || 'Tidak tersedia'} hari</StatNumber>
+                                </Stat>
+                                <Stat>
+                                  <StatLabel>Set Harian</StatLabel>
+                                  <StatNumber fontSize="sm">{workout.sets_per_exercise || 'Tidak tersedia'} set</StatNumber>
+                                </Stat>
+                                <Stat>
+                                  <StatLabel>Latihan per Sesi</StatLabel>
+                                  <StatNumber fontSize="sm">{workout.exercises_per_session || 'Tidak tersedia'} latihan</StatNumber>
+                                </Stat>
+                              </SimpleGrid>
+
+                              {/* Cardio Section */}
+                              {workout.cardio_minutes_per_day > 0 && (
+                                <>
+                                  <Text fontWeight="bold" fontSize="md" mt={4}>🏃 Kardio Harian</Text>
+                                  <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                                    <Stat>
+                                      <StatLabel>Durasi per Hari</StatLabel>
+                                      <StatNumber fontSize="sm">{workout.cardio_minutes_per_day} menit</StatNumber>
+                                    </Stat>
+                                    <Stat>
+                                      <StatLabel>Sesi per Hari</StatLabel>
+                                      <StatNumber fontSize="sm">{workout.cardio_sessions_per_day || 1} sesi</StatNumber>
+                                    </Stat>
+                                  </SimpleGrid>
+                                </>
+                              )}
+
+                              {/* Workout schedule */}
+                              {(workout.workout_schedule || workout.schedule || workout.weekly_schedule) && (
+                                <Box mt={4}>
+                                  <Text fontWeight="bold" mb={2}>📋 Jadwal yang Disarankan</Text>
+                                  <Box p={3} bg="blue.50" borderRadius="md" border="1px" borderColor="blue.200">
+                                    <Text fontFamily="mono" fontSize="lg" textAlign="center" fontWeight="bold">
+                                      {workout.workout_schedule || workout.schedule || workout.weekly_schedule}
+                                    </Text>
+                                    <Text fontSize="xs" color="gray.600" mt={2} textAlign="center">
+                                      W = Hari latihan, X = Hari istirahat
+                                    </Text>
+                                  </Box>
+                                </Box>
+                              )}
+
+                              {/* Workout Type Explanations */}
+                              <Box mt={4}>
+                                <Text fontWeight="bold" mb={3}>📚 Penjelasan Jenis Latihan</Text>
+                                <VStack spacing={3} align="stretch">
+                                  <Box p={3} bg="gray.50" borderRadius="md">
+                                    <Text fontWeight="bold" fontSize="sm">🏋️ Full Body Workouts</Text>
+                                    <Text fontSize="xs" color="gray.600" mt={1}>
+                                      Melatih semua kelompok otot utama dalam setiap sesi. Cocok untuk pemula dan orang dengan waktu terbatas.
+                                    </Text>
+                                  </Box>
+                                  <Box p={3} bg="gray.50" borderRadius="md">
+                                    <Text fontWeight="bold" fontSize="sm">🔄 Upper/Lower Split</Text>
+                                    <Text fontSize="xs" color="gray.600" mt={1}>
+                                      Split latihan atas dan bawah tubuh. Cocok untuk atlet menengah dengan ketersediaan waktu sedang.
+                                    </Text>
+                                  </Box>
+                                  <Box p={3} bg="gray.50" borderRadius="md">
+                                    <Text fontWeight="bold" fontSize="sm">💪 Push/Pull/Legs</Text>
+                                    <Text fontSize="xs" color="gray.600" mt={1}>
+                                      Split berdasarkan gerakan dorong, tarik, dan kaki. Cocok untuk atlet lanjutan.
+                                    </Text>
+                                  </Box>
+                                </VStack>
+                              </Box>
+                            </>
+                          );
+                        })()}
+                      </VStack>
+                    </CardBody>
+                  </Card>
+                )}
+
+                {/* Nutrition Recommendation Section - Always show if we have recommendations */}
+                {selectedRecommendation.recommendations && (
+                  <Card variant="outline">
+                    <CardHeader>
+                      <HStack justify="space-between">
+                        <Heading size="md">🍎 Program Nutrisi Harian</Heading>
+                        {(() => {
+                          const templateId = selectedRecommendation.recommendations.nutrition_recommendation?.template_id || 
+                                           selectedRecommendation.recommendations.predictions?.nutrition_template?.template_id ||
+                                           selectedRecommendation.recommendations.predicted_nutrition_template_id;
+                          return templateId && (
+                            <Badge colorScheme="green" fontSize="0.8em">
+                              Template ID: {templateId}
+                            </Badge>
+                          );
+                        })()}
+                      </HStack>
+                    </CardHeader>
+                    <CardBody>
+                      <VStack spacing={4} align="stretch">
+                        <Text fontWeight="bold" fontSize="md">🎯 Target Harian Berdasarkan Template</Text>
+                        
+                        {(() => {
+                          // Use the same calculation logic as RecommendationDisplay
+                          const nutrition = selectedRecommendation.recommendations.nutrition_recommendation || 
+                                           selectedRecommendation.recommendations.predictions?.nutrition_template ||
+                                           selectedRecommendation.recommendations.nutrition_template;
+                          
+                          const weight = parseFloat(selectedRecommendation.userData.weight);
+                          const userProfile = selectedRecommendation.userProfile || 
+                                             selectedRecommendation.recommendations?.user_profile ||
+                                             selectedRecommendation.recommendations?.user_metrics;
+                          const tdee = userProfile?.tdee || userProfile?.total_daily_energy_expenditure || 2000;
+                          
+                          let dailyMacros = null;
+                          
+                          if (nutrition) {
+                            // Priority 1: Use pre-calculated values from the API if available
+                            if (nutrition.target_calories && nutrition.target_protein && nutrition.target_carbs && nutrition.target_fat) {
+                              dailyMacros = {
+                                calories: Math.round(nutrition.target_calories),
+                                protein: Math.round(nutrition.target_protein),
+                                carbs: Math.round(nutrition.target_carbs),
+                                fat: Math.round(nutrition.target_fat)
+                              };
+                            }
+                            // Priority 2: Use template multipliers if available
+                            else if (nutrition.caloric_intake_multiplier && nutrition.protein_per_kg && nutrition.carbs_per_kg && nutrition.fat_per_kg) {
+                              dailyMacros = {
+                                calories: Math.round(tdee * nutrition.caloric_intake_multiplier),
+                                protein: Math.round(weight * nutrition.protein_per_kg),
+                                carbs: Math.round(weight * nutrition.carbs_per_kg),
+                                fat: Math.round(weight * nutrition.fat_per_kg)
+                              };
+                            }
+                            // Fallback: Use standard macro calculations for different goals
+                            else {
+                              let calories, protein, carbs, fat;
+                              
+                              if (selectedRecommendation.userData.fitness_goal === 'Fat Loss') {
+                                calories = Math.round(tdee * 0.8); // 20% deficit
+                                protein = Math.round(weight * 2.3);
+                                carbs = Math.round(weight * 1.8);
+                                fat = Math.round(weight * 1.0);
+                              } else if (selectedRecommendation.userData.fitness_goal === 'Muscle Gain') {
+                                calories = Math.round(tdee * 1.1); // 10% surplus
+                                protein = Math.round(weight * 2.1);
+                                carbs = Math.round(weight * 4.25);
+                                fat = Math.round(weight * 1.0);
+                              } else { // Maintenance
+                                calories = Math.round(tdee * 0.95);
+                                protein = Math.round(weight * 1.8);
+                                carbs = Math.round(weight * 4.5);
+                                fat = Math.round(weight * 1.0);
+                              }
+                              
+                              dailyMacros = { calories, protein, carbs, fat };
+                            }
+                          }
+                          
+                          if (!dailyMacros) {
+                            return (
+                              <Alert status="warning" borderRadius="md">
+                                <AlertIcon />
+                                <Box>
+                                  <AlertTitle fontSize="sm">Data Nutrisi Tidak Tersedia</AlertTitle>
+                                  <AlertDescription fontSize="xs">
+                                    Data nutrisi dari rekomendasi ini tidak dapat dihitung.
+                                  </AlertDescription>
+                                </Box>
+                              </Alert>
+                            );
+                          }
+                          
+                          return (
+                            <>
+                              <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
+                                <Stat>
+                                  <StatLabel>🔥 Kalori</StatLabel>
+                                  <StatNumber fontSize="sm">
+                                    {dailyMacros.calories} kkal
+                                  </StatNumber>
+                                  <StatHelpText fontSize="xs">
+                                    <Badge colorScheme={
+                                      selectedRecommendation.userData?.fitness_goal === 'Fat Loss' ? 'red' : 
+                                      selectedRecommendation.userData?.fitness_goal === 'Muscle Gain' ? 'green' : 'blue'
+                                    }>
+                                      {selectedRecommendation.userData?.fitness_goal === 'Fat Loss' ? `Defisit: ${Math.round((1 - (dailyMacros.calories / tdee)) * 100)}%` :
+                                       selectedRecommendation.userData?.fitness_goal === 'Muscle Gain' ? `Surplus: +${Math.round(((dailyMacros.calories / tdee) - 1) * 100)}%` :
+                                       'Maintenance'}
+                                    </Badge>
+                                  </StatHelpText>
+                                </Stat>
+                                <Stat>
+                                  <StatLabel>🥩 Protein</StatLabel>
+                                  <StatNumber fontSize="sm">
+                                    {dailyMacros.protein}g
+                                  </StatNumber>
+                                </Stat>
+                                <Stat>
+                                  <StatLabel>🍞 Karbohidrat</StatLabel>
+                                  <StatNumber fontSize="sm">
+                                    {dailyMacros.carbs}g
+                                  </StatNumber>
+                                </Stat>
+                                <Stat>
+                                  <StatLabel>🥑 Lemak</StatLabel>
+                                  <StatNumber fontSize="sm">
+                                    {dailyMacros.fat}g
+                                  </StatNumber>
+                                </Stat>
+                              </SimpleGrid>
+                            </>
+                          );
+                        })()}
+                      </VStack>
+                    </CardBody>
+                  </Card>
+                )}
+              </VStack>
+            )}
+          </ModalBody>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 };
