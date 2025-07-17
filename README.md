@@ -3,6 +3,14 @@
 ## 🎯 Overview
 FitTech AI is a comprehensive machine learning system that provides personalized fitness and nutrition recommendations using dual XGBoost and Random Forest algorithms with advanced 29-feature engineering and BMI-based goal restrictions. The system combines real household data with intelligent synthetic augmentation for robust, evidence-based recommendations.
 
+## 🔒 Transparent & Honest Approach
+- **Natural Data Distribution**: Respects and preserves the natural distribution of real data
+- **No Artificial Fixes**: Does not artificially "fix" data imbalances or create fake samples
+- **Transparent Limitations**: Honestly reports all data limitations and model constraints
+- **Fallback Logic**: Provides alternative recommendations for rare combinations
+- **Confidence Scoring**: Reflects actual training data coverage, not artificially inflated scores
+- **Professional Recommendations**: Suggests professional consultation for underrepresented profiles
+
 ## 🤖 Machine Learning Features
 
 ### Advanced Feature Engineering (29 Features)
@@ -26,6 +34,8 @@ FitTech AI is a comprehensive machine learning system that provides personalized
 - **Real Data Priority**: 3,659 real samples (ages 18-65) from household dataset
 - **Synthetic Augmentation**: 2,203 synthetic samples for balanced goal distribution
 - **Age Filtering**: Restricted to adults aged 18-65 for safety and relevance
+- **Transparent Limitations**: Natural data distribution preserved, limitations honestly reported
+- **Fallback Logic**: Alternative recommendations for rare combinations with low confidence
 - **Data Persistence**: Training data saved for visualization and analysis
 
 ## 🎯 System Features

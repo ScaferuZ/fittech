@@ -1,0 +1,20 @@
+THESIS MODEL COMPARISON SUMMARY
+==================================================
+
+1. RULE-BASED SYSTEM (Theoretical Upper Bound)
+----------------------------------------
+Workout Template Accuracy: 0.996 (99.6%)
+Nutrition Template Accuracy: 0.993 (99.3%)
+Overall Rule-based Accuracy: 0.995 (99.5%)
+
+2. MACHINE LEARNING MODELS
+----------------------------------------
+XGBoost - Workout: 0.682, Nutrition: 0.622, Average: 0.652
+Random Forest - Workout: 0.692, Nutrition: 0.655, Average: 0.673
+
+3. KEY FINDINGS
+----------------------------------------
+• Rule-based system serves as the theoretical upper bound
+• ML models show realistic performance given data limitations
+• Performance gap reflects the deterministic nature of template assignment
+• Results demonstrate the effectiveness of rule-based logic for this domain

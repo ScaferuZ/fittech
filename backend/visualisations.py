@@ -1,63 +1,72 @@
 #!/usr/bin/env python3
 """
-XGFitness AI Comprehensive Visualization Suite
-Generates high-quality publication-ready visualizations for thesis analysis
-Compatible with the XGFitness AI model system
+XGFitness AI Individual Chart Visualization Suite
+Each chart is saved as a separate PNG file with side-by-side model comparisons
 """
 
 import os
 import sys
 import warnings
-import argparse
-import pickle
-import traceback
-import matplotlib.pyplot as plt
-import seaborn as sns
-import pandas as pd
-import numpy as np
+
+# Try to import visualization dependencies
+try:
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    import pandas as pd
+    import numpy as np
+    from sklearn.metrics import (accuracy_score, f1_score, precision_score, recall_score, 
+                               confusion_matrix, classification_report, roc_curve, auc)
+    from sklearn.preprocessing import label_binarize
+    from itertools import cycle
+    VISUALIZATION_AVAILABLE = True
+except ImportError as e:
+    print(f"⚠️  Visualization dependencies not available: {e}")
+    print("   Install with: pip install matplotlib seaborn pandas numpy scikit-learn")
+    VISUALIZATION_AVAILABLE = False
+    # Create dummy imports to prevent errors
+    plt = None
+    sns = None
+    pd = None
+    np = None
+    accuracy_score = lambda *args, **kwargs: 0.0
+    f1_score = lambda *args, **kwargs: 0.0
+    precision_score = lambda *args, **kwargs: 0.0
+    recall_score = lambda *args, **kwargs: 0.0
+    confusion_matrix = lambda *args, **kwargs: [[0]]
+    classification_report = lambda *args, **kwargs: ""
+    roc_curve = lambda *args, **kwargs: ([0], [0], [0])
+    auc = lambda *args, **kwargs: 0.0
+    label_binarize = lambda *args, **kwargs: [[0]]
+    cycle = lambda *args: iter([])
+
 from datetime import datetime
-from sklearn.metrics import (accuracy_score, f1_score, precision_score, recall_score, 
-                           confusion_matrix, classification_report, roc_curve, auc)
-from sklearn.preprocessing import label_binarize
-from itertools import cycle
 
 # Suppress warnings for cleaner output
 warnings.filterwarnings('ignore')
 
 # Set high-quality plotting parameters
-plt.rcParams['figure.dpi'] = 300
-plt.rcParams['savefig.dpi'] = 300
-plt.rcParams['font.size'] = 12
-plt.rcParams['axes.titlesize'] = 14
-plt.rcParams['axes.labelsize'] = 12
-plt.rcParams['legend.fontsize'] = 10
-plt.rcParams['xtick.labelsize'] = 10
-plt.rcParams['ytick.labelsize'] = 10
+if plt is not None:
+    plt.rcParams['figure.dpi'] = 300
+    plt.rcParams['savefig.dpi'] = 300
+    plt.rcParams['font.size'] = 12
+    plt.rcParams['axes.titlesize'] = 14
+    plt.rcParams['axes.labelsize'] = 12
+    plt.rcParams['legend.fontsize'] = 10
+    plt.rcParams['xtick.labelsize'] = 10
+    plt.rcParams['ytick.labelsize'] = 10
 
-def generate_all_visualizations(model, df_training, save_dir='visualizations'):
-    """
-    Generate all comprehensive visualizations for XGFitness AI thesis
-    
-    Args:
-        model: Trained XGFitnessAIModel instance
-        df_training: Training dataset DataFrame
-        save_dir: Directory to save visualizations
-    """
-    # Create visualization suite instance
-    viz_suite = XGFitnessVisualizationSuite(model, df_training, save_dir)
-    
-    # Generate all visualizations
-    viz_suite.generate_all_visualizations()
-    
-    return save_dir
+# Rule-based baseline is now handled by the model's predict_rule_based() method
+# This ensures consistency with the model's template assignment logic
 
-class XGFitnessVisualizationSuite:
+class XGFitnessIndividualVisualizationSuite:
     """
-    Comprehensive visualization suite for XGFitness AI system
-    Generates publication-quality charts for thesis and analysis
+    Individual chart visualization suite - each chart as separate PNG
     """
     
-    def __init__(self, model, df_training, save_dir='visualizations'):
+    def __init__(self, model, df_training, save_dir='visualizations_individual'):
+        if not VISUALIZATION_AVAILABLE:
+            raise ImportError("Visualization dependencies not available. Install with: pip install matplotlib seaborn pandas numpy scikit-learn")
+            
         self.model = model
         self.df_training = df_training
         self.save_dir = save_dir
@@ -65,10 +74,14 @@ class XGFitnessVisualizationSuite:
         # Create save directory
         os.makedirs(save_dir, exist_ok=True)
         
-        # Set professional color palette
+        # Rule-based baseline is now handled by model.predict_rule_based()
+        # No separate initialization needed
+        
+        # Professional color palette
         self.colors = {
             'xgboost': '#1f77b4',      # Professional blue
             'random_forest': '#ff7f0e', # Professional orange
+            'rule_based': '#2ca02c',    # Professional green
             'real_data': '#2ca02c',    # Professional green
             'synthetic': '#d62728',    # Professional red
             'primary': '#3498db',      # Modern blue
@@ -82,275 +95,349 @@ class XGFitnessVisualizationSuite:
         plt.style.use('seaborn-v0_8-whitegrid')
         sns.set_palette("husl")
         
-        print(f"🎨 Visualization Suite initialized")
+        print(f"🎨 Individual Chart Suite initialized")
         print(f"   Save directory: {save_dir}")
         print(f"   Dataset size: {len(df_training)} samples")
-        print(f"   Models available: {self._check_models()}")
+        print(f"   Rule-based baseline: Using model.predict_rule_based()")
     
-    def _check_models(self):
-        """Check which models are available"""
-        models = []
-        if hasattr(self.model, 'workout_model') and self.model.workout_model:
-            models.append("XGBoost")
-        if hasattr(self.model, 'workout_rf_model') and self.model.workout_rf_model:
-            models.append("Random Forest")
-        return " + ".join(models) if models else "None trained"
-    
-    def generate_all_visualizations(self):
-        """Generate all visualization charts"""
-        print(f"\n🎨 GENERATING COMPREHENSIVE VISUALIZATIONS")
+    def generate_all_individual_charts(self):
+        """Generate all charts as individual PNG files"""
+        print(f"\n🎨 GENERATING INDIVIDUAL CHARTS")
         print("="*80)
         
-        # 1. Dataset Overview and Composition
-        print("📊 1. Dataset composition analysis...")
-        self.create_dataset_composition_charts()
+        # Dataset Composition Charts (6 individual charts)
+        print("📊 1. Dataset composition charts...")
+        self.create_data_source_pie()
+        self.create_split_distribution()
+        self.create_fitness_goal_distribution()
+        self.create_activity_level_distribution()
+        self.create_bmi_category_distribution()
+        self.create_gender_distribution()
         
-        # 2. Data Quality and Authenticity Analysis
-        print("🔍 2. Data quality and authenticity analysis...")
-        self.create_data_quality_charts()
+        # Data Quality Charts (4 individual charts)
+        print("🔍 2. Data quality charts...")
+        self.create_real_vs_synthetic_by_split()
+        self.create_age_distribution()
+        self.create_bmi_vs_tdee_scatter()
+        self.create_activity_hours_scatter()
         
-        # 3. Demographic and Physiological Analysis
-        print("👥 3. Demographic and physiological analysis...")
-        self.create_demographic_analysis()
+        # Demographic Charts (6 individual charts)
+        print("👥 3. Demographic charts...")
+        self.create_height_by_gender()
+        self.create_weight_by_gender()
+        self.create_bmi_distribution_with_categories()
+        self.create_bmr_vs_age_by_gender()
+        self.create_tdee_by_activity_level()
+        self.create_age_vs_bmi_by_goal()
         
-        # 4. Template Assignment Analysis
-        print("📋 4. Template assignment analysis...")
-        self.create_template_analysis()
+        # Template Analysis Charts (4 individual charts)
+        print("📋 4. Template analysis charts...")
+        self.create_workout_template_distribution()
+        self.create_nutrition_template_distribution()
+        self.create_fat_loss_activity_bmi_heatmap()
+        self.create_top_template_combinations()
         
-        # 5. Model Performance Analysis (if models trained)
+        # Model Performance Charts (if models trained)
         if self.model.is_trained:
-            print("🤖 5. Model performance analysis...")
-            self.create_model_performance_analysis()
+            print("🤖 5. Model performance charts...")
+            self.create_workout_model_comparison()
+            self.create_nutrition_model_comparison()
+            self.create_overall_model_performance()
             
-            # 6. Confusion Matrices
-            print("📈 6. Confusion matrices for all models...")
-            self.create_confusion_matrices()
+            print("📈 6. Confusion matrices...")
+            self.create_individual_confusion_matrices()
             
-            # 7. ROC Curves
-            print("📉 7. ROC/AUC analysis...")
-            self.create_roc_analysis()
+            print("📉 7. ROC curves...")
+            self.create_individual_roc_curves()
             
-            # 8. Model Comparison
             print("⚖️  8. Model comparison analysis...")
-            self.create_model_comparison()
-            
-        else:
-            print("⚠️  Skipping model performance visualizations (models not trained)")
+            self.create_prediction_agreement()
+            self.create_algorithm_diversity()
         
-        # 9. Research Summary Dashboard
-        print("📊 9. Research summary dashboard...")
-        self.create_research_summary()
+        # Summary Charts
+        print("📊 9. Summary charts...")
+        self.create_dataset_summary()
+        self.create_template_coverage()
+        self.create_research_findings()
         
-        print(f"\n✅ All visualizations completed!")
-        print(f"📁 Files saved to: {self.save_dir}/")
-        self._list_generated_files()
+        print(f"\n✅ All individual charts completed!")
+        self._list_individual_files()
     
-    def create_dataset_composition_charts(self):
-        """Create comprehensive dataset composition analysis"""
-        fig, axes = plt.subplots(2, 3, figsize=(20, 14))
-        fig.suptitle('XGFitness AI Dataset Composition Analysis', fontsize=18, fontweight='bold', y=0.95)
-        
-        # 1. Data Source Distribution
+    # Dataset Composition Individual Charts
+    def create_data_source_pie(self):
+        """Data source distribution pie chart"""
+        fig, ax = plt.subplots(figsize=(10, 8))
         source_counts = self.df_training['data_source'].value_counts()
         colors_source = [self.colors['real_data'], self.colors['synthetic']]
-        wedges, texts, autotexts = axes[0, 0].pie(
+        
+        # Create explode array with correct length
+        explode = [0.05] + [0] * (len(source_counts) - 1)
+        
+        wedges, texts, autotexts = ax.pie(
             source_counts.values, 
             labels=source_counts.index, 
             autopct='%1.1f%%', 
             startangle=90,
-            colors=colors_source,
-            explode=(0.05, 0)
+            colors=colors_source[:len(source_counts)],
+            explode=explode
         )
-        axes[0, 0].set_title('Data Source Distribution', fontsize=14, fontweight='bold')
-        
-        # 2. Train/Validation/Test Split
+        ax.set_title('Data Source Distribution', fontsize=16, fontweight='bold', pad=20)
+        plt.tight_layout()
+        plt.savefig(f'{self.save_dir}/01_data_source_distribution.png', 
+                   dpi=300, bbox_inches='tight', facecolor='white')
+        plt.close()
+    
+    def create_split_distribution(self):
+        """Train/validation/test split distribution"""
+        fig, ax = plt.subplots(figsize=(10, 8))
         split_counts = self.df_training['split'].value_counts()
-        bars = axes[0, 1].bar(
+        bars = ax.bar(
             split_counts.index, 
             split_counts.values, 
             color=[self.colors['primary'], self.colors['accent'], self.colors['secondary']]
         )
-        axes[0, 1].set_title('Data Split Distribution', fontsize=14, fontweight='bold')
-        axes[0, 1].set_ylabel('Number of Samples')
+        ax.set_title('Data Split Distribution', fontsize=16, fontweight='bold')
+        ax.set_ylabel('Number of Samples')
         
         # Add value labels on bars
         for bar in bars:
             height = bar.get_height()
-            axes[0, 1].annotate(f'{int(height)}',
-                              xy=(bar.get_x() + bar.get_width() / 2, height),
-                              xytext=(0, 3), textcoords="offset points",
-                              ha='center', va='bottom', fontweight='bold')
+            ax.annotate(f'{int(height)}',
+                       xy=(bar.get_x() + bar.get_width() / 2, height),
+                       xytext=(0, 3), textcoords="offset points",
+                       ha='center', va='bottom', fontweight='bold')
         
-        # 3. Fitness Goal Distribution
+        plt.tight_layout()
+        plt.savefig(f'{self.save_dir}/02_split_distribution.png', 
+                   dpi=300, bbox_inches='tight', facecolor='white')
+        plt.close()
+    
+    def create_fitness_goal_distribution(self):
+        """Fitness goal distribution"""
+        fig, ax = plt.subplots(figsize=(10, 8))
         goal_counts = self.df_training['fitness_goal'].value_counts()
-        bars = axes[0, 2].bar(
+        bars = ax.bar(
             goal_counts.index, 
             goal_counts.values, 
             color=[self.colors['success'], self.colors['accent'], self.colors['primary']]
         )
-        axes[0, 2].set_title('Fitness Goal Distribution', fontsize=14, fontweight='bold')
-        axes[0, 2].set_ylabel('Number of Samples')
-        axes[0, 2].tick_params(axis='x', rotation=45)
+        ax.set_title('Fitness Goal Distribution', fontsize=16, fontweight='bold')
+        ax.set_ylabel('Number of Samples')
+        ax.tick_params(axis='x', rotation=45)
         
-        # Add value labels
+        # Add value labels and percentages
+        total = sum(goal_counts.values)
         for bar in bars:
             height = bar.get_height()
-            axes[0, 2].annotate(f'{int(height)}',
-                              xy=(bar.get_x() + bar.get_width() / 2, height),
-                              xytext=(0, 3), textcoords="offset points",
-                              ha='center', va='bottom', fontweight='bold')
+            pct = height / total * 100
+            ax.annotate(f'{int(height)}\n({pct:.1f}%)',
+                       xy=(bar.get_x() + bar.get_width() / 2, height),
+                       xytext=(0, 3), textcoords="offset points",
+                       ha='center', va='bottom', fontweight='bold')
         
-        # 4. Activity Level Distribution (Natural - PRESERVED)
+        plt.tight_layout()
+        plt.savefig(f'{self.save_dir}/03_fitness_goal_distribution.png', 
+                   dpi=300, bbox_inches='tight', facecolor='white')
+        plt.close()
+    
+    def create_activity_level_distribution(self):
+        """Activity level distribution (Natural - Preserved)"""
+        fig, ax = plt.subplots(figsize=(10, 8))
         activity_counts = self.df_training['activity_level'].value_counts()
-        bars = axes[1, 0].bar(
+        bars = ax.bar(
             activity_counts.index, 
             activity_counts.values, 
             color=['#ff6b6b', '#4ecdc4', '#45b7d1']
         )
-        axes[1, 0].set_title('Activity Level Distribution\n(Natural - Preserved)', fontsize=14, fontweight='bold')
-        axes[1, 0].set_ylabel('Number of Samples')
-        axes[1, 0].tick_params(axis='x', rotation=45)
+        ax.set_title('Activity Level Distribution\n(Natural - Preserved)', fontsize=16, fontweight='bold')
+        ax.set_ylabel('Number of Samples')
+        ax.tick_params(axis='x', rotation=45)
         
         # Add percentage labels
         total = sum(activity_counts.values)
-        for i, bar in enumerate(bars):
+        for bar in bars:
             height = bar.get_height()
             pct = height / total * 100
-            axes[1, 0].annotate(f'{int(height)}\n({pct:.1f}%)',
-                              xy=(bar.get_x() + bar.get_width() / 2, height),
-                              xytext=(0, 3), textcoords="offset points",
-                              ha='center', va='bottom', fontweight='bold')
+            ax.annotate(f'{int(height)}\n({pct:.1f}%)',
+                       xy=(bar.get_x() + bar.get_width() / 2, height),
+                       xytext=(0, 3), textcoords="offset points",
+                       ha='center', va='bottom', fontweight='bold')
         
-        # 5. BMI Category Distribution (Natural - PRESERVED)
+        plt.tight_layout()
+        plt.savefig(f'{self.save_dir}/04_activity_level_distribution.png', 
+                   dpi=300, bbox_inches='tight', facecolor='white')
+        plt.close()
+    
+    def create_bmi_category_distribution(self):
+        """BMI category distribution (Natural - Preserved)"""
+        fig, ax = plt.subplots(figsize=(10, 8))
         bmi_counts = self.df_training['bmi_category'].value_counts()
-        bars = axes[1, 1].bar(
+        bars = ax.bar(
             bmi_counts.index, 
             bmi_counts.values, 
             color=['#ffeaa7', '#74b9ff', '#fd79a8', '#e17055']
         )
-        axes[1, 1].set_title('BMI Category Distribution\n(Natural - Preserved)', fontsize=14, fontweight='bold')
-        axes[1, 1].set_ylabel('Number of Samples')
-        axes[1, 1].tick_params(axis='x', rotation=45)
+        ax.set_title('BMI Category Distribution\n(Natural - Preserved)', fontsize=16, fontweight='bold')
+        ax.set_ylabel('Number of Samples')
+        ax.tick_params(axis='x', rotation=45)
         
         # Add percentage labels
         total = sum(bmi_counts.values)
-        for i, bar in enumerate(bars):
+        for bar in bars:
             height = bar.get_height()
             pct = height / total * 100
-            axes[1, 1].annotate(f'{int(height)}\n({pct:.1f}%)',
-                              xy=(bar.get_x() + bar.get_width() / 2, height),
-                              xytext=(0, 3), textcoords="offset points",
-                              ha='center', va='bottom', fontweight='bold')
+            ax.annotate(f'{int(height)}\n({pct:.1f}%)',
+                       xy=(bar.get_x() + bar.get_width() / 2, height),
+                       xytext=(0, 3), textcoords="offset points",
+                       ha='center', va='bottom', fontweight='bold')
         
-        # 6. Gender Distribution
+        plt.tight_layout()
+        plt.savefig(f'{self.save_dir}/05_bmi_category_distribution.png', 
+                   dpi=300, bbox_inches='tight', facecolor='white')
+        plt.close()
+    
+    def create_gender_distribution(self):
+        """Gender distribution pie chart"""
+        fig, ax = plt.subplots(figsize=(10, 8))
         gender_counts = self.df_training['gender'].value_counts()
         colors_gender = [self.colors['primary'], self.colors['secondary']]
-        axes[1, 2].pie(
+        ax.pie(
             gender_counts.values, 
             labels=gender_counts.index, 
             autopct='%1.1f%%', 
             startangle=90,
             colors=colors_gender
         )
-        axes[1, 2].set_title('Gender Distribution\n(Natural - Preserved)', fontsize=14, fontweight='bold')
+        ax.set_title('Gender Distribution\n(Natural - Preserved)', fontsize=16, fontweight='bold')
         
         plt.tight_layout()
-        plt.savefig(f'{self.save_dir}/01_dataset_composition_analysis.png', 
+        plt.savefig(f'{self.save_dir}/06_gender_distribution.png', 
                    dpi=300, bbox_inches='tight', facecolor='white')
         plt.close()
     
-    def create_data_quality_charts(self):
-        """Create data quality and authenticity verification charts"""
-        fig, axes = plt.subplots(2, 2, figsize=(16, 12))
-        fig.suptitle('Data Quality and Authenticity Verification', fontsize=18, fontweight='bold')
-        
-        # 1. Real vs Synthetic by Split (Critical for authenticity)
+    # Data Quality Individual Charts
+    def create_real_vs_synthetic_by_split(self):
+        """Real vs synthetic data by split"""
+        fig, ax = plt.subplots(figsize=(12, 8))
         split_source = self.df_training.groupby(['split', 'data_source']).size().unstack(fill_value=0)
-        bars = split_source.plot(kind='bar', ax=axes[0, 0], 
+        bars = split_source.plot(kind='bar', ax=ax, 
                                 color=[self.colors['real_data'], self.colors['synthetic']], 
                                 width=0.7)
-        axes[0, 0].set_title('Real vs Synthetic Data by Split\n(Validation & Test: 100% Real)', 
-                           fontsize=14, fontweight='bold')
-        axes[0, 0].set_ylabel('Number of Samples')
-        axes[0, 0].tick_params(axis='x', rotation=45)
-        axes[0, 0].legend(['Real Data', 'Synthetic Data'])
+        ax.set_title('Real vs Synthetic Data by Split\n(Validation & Test: 100% Real)', 
+                    fontsize=16, fontweight='bold')
+        ax.set_ylabel('Number of Samples')
+        ax.tick_params(axis='x', rotation=45)
+        ax.legend(['Real Data', 'Synthetic Data'])
         
         # Add value labels on stacked bars
-        for container in axes[0, 0].containers:
-            axes[0, 0].bar_label(container, label_type='center', fontweight='bold')
+        for container in ax.containers:
+            ax.bar_label(container, label_type='center', fontweight='bold')
         
-        # 2. Age Distribution Analysis
-        axes[0, 1].hist(self.df_training['age'], bins=25, color=self.colors['primary'], 
-                       alpha=0.7, edgecolor='black')
+        plt.tight_layout()
+        plt.savefig(f'{self.save_dir}/07_real_vs_synthetic_by_split.png', 
+                   dpi=300, bbox_inches='tight', facecolor='white')
+        plt.close()
+    
+    def create_age_distribution(self):
+        """Age distribution histogram"""
+        fig, ax = plt.subplots(figsize=(12, 8))
+        ax.hist(self.df_training['age'], bins=25, color=self.colors['primary'], 
+               alpha=0.7, edgecolor='black')
         mean_age = self.df_training['age'].mean()
-        axes[0, 1].axvline(mean_age, color=self.colors['secondary'], 
-                          linestyle='--', linewidth=2, label=f'Mean: {mean_age:.1f} years')
-        axes[0, 1].set_title('Age Distribution', fontsize=14, fontweight='bold')
-        axes[0, 1].set_xlabel('Age (years)')
-        axes[0, 1].set_ylabel('Frequency')
-        axes[0, 1].legend()
+        ax.axvline(mean_age, color=self.colors['secondary'], 
+                  linestyle='--', linewidth=2, label=f'Mean: {mean_age:.1f} years')
+        ax.set_title('Age Distribution', fontsize=16, fontweight='bold')
+        ax.set_xlabel('Age (years)')
+        ax.set_ylabel('Frequency')
+        ax.legend()
         
-        # 3. BMI vs TDEE Relationship (colored by activity level)
-        scatter = axes[1, 0].scatter(
+        plt.tight_layout()
+        plt.savefig(f'{self.save_dir}/08_age_distribution.png', 
+                   dpi=300, bbox_inches='tight', facecolor='white')
+        plt.close()
+    
+    def create_bmi_vs_tdee_scatter(self):
+        """BMI vs TDEE scatter plot"""
+        fig, ax = plt.subplots(figsize=(12, 8))
+        scatter = ax.scatter(
             self.df_training['bmi'], 
             self.df_training['tdee'], 
             c=self.df_training['activity_level'].astype('category').cat.codes, 
             alpha=0.6, 
             cmap='viridis',
-            s=20
+            s=30
         )
-        axes[1, 0].set_title('BMI vs TDEE by Activity Level', fontsize=14, fontweight='bold')
-        axes[1, 0].set_xlabel('BMI')
-        axes[1, 0].set_ylabel('TDEE (calories)')
+        ax.set_title('BMI vs TDEE by Activity Level', fontsize=16, fontweight='bold')
+        ax.set_xlabel('BMI')
+        ax.set_ylabel('TDEE (calories)')
         
         # Add colorbar
-        cbar = plt.colorbar(scatter, ax=axes[1, 0])
+        cbar = plt.colorbar(scatter, ax=ax)
         cbar.set_label('Activity Level')
         
-        # 4. Activity Hours Distribution
-        axes[1, 1].scatter(
+        plt.tight_layout()
+        plt.savefig(f'{self.save_dir}/09_bmi_vs_tdee_scatter.png', 
+                   dpi=300, bbox_inches='tight', facecolor='white')
+        plt.close()
+    
+    def create_activity_hours_scatter(self):
+        """Moderate vs vigorous activity hours scatter"""
+        fig, ax = plt.subplots(figsize=(12, 8))
+        ax.scatter(
             self.df_training['Mod_act'], 
             self.df_training['Vig_act'], 
             c=self.df_training['activity_level'].astype('category').cat.codes, 
             alpha=0.6, 
             cmap='viridis',
-            s=20
+            s=30
         )
-        axes[1, 1].set_title('Moderate vs Vigorous Activity Hours', fontsize=14, fontweight='bold')
-        axes[1, 1].set_xlabel('Moderate Activity (hours/week)')
-        axes[1, 1].set_ylabel('Vigorous Activity (hours/week)')
+        ax.set_title('Moderate vs Vigorous Activity Hours', fontsize=16, fontweight='bold')
+        ax.set_xlabel('Moderate Activity (hours/week)')
+        ax.set_ylabel('Vigorous Activity (hours/week)')
         
         plt.tight_layout()
-        plt.savefig(f'{self.save_dir}/02_data_quality_authenticity.png', 
+        plt.savefig(f'{self.save_dir}/10_activity_hours_scatter.png', 
                    dpi=300, bbox_inches='tight', facecolor='white')
         plt.close()
     
-    def create_demographic_analysis(self):
-        """Create detailed demographic and physiological analysis"""
-        fig, axes = plt.subplots(2, 3, figsize=(20, 12))
-        fig.suptitle('Demographic and Physiological Analysis', fontsize=18, fontweight='bold')
-        
-        # 1. Height Distribution by Gender
+    # Demographic Individual Charts
+    def create_height_by_gender(self):
+        """Height distribution by gender"""
+        fig, ax = plt.subplots(figsize=(12, 8))
         for gender in ['Male', 'Female']:
             data = self.df_training[self.df_training['gender'] == gender]['height_cm']
-            axes[0, 0].hist(data, alpha=0.7, label=gender, bins=20)
-        axes[0, 0].set_title('Height Distribution by Gender', fontsize=14, fontweight='bold')
-        axes[0, 0].set_xlabel('Height (cm)')
-        axes[0, 0].set_ylabel('Frequency')
-        axes[0, 0].legend()
+            ax.hist(data, alpha=0.7, label=gender, bins=20)
+        ax.set_title('Height Distribution by Gender', fontsize=16, fontweight='bold')
+        ax.set_xlabel('Height (cm)')
+        ax.set_ylabel('Frequency')
+        ax.legend()
         
-        # 2. Weight Distribution by Gender
+        plt.tight_layout()
+        plt.savefig(f'{self.save_dir}/11_height_by_gender.png', 
+                   dpi=300, bbox_inches='tight', facecolor='white')
+        plt.close()
+    
+    def create_weight_by_gender(self):
+        """Weight distribution by gender"""
+        fig, ax = plt.subplots(figsize=(12, 8))
         for gender in ['Male', 'Female']:
             data = self.df_training[self.df_training['gender'] == gender]['weight_kg']
-            axes[0, 1].hist(data, alpha=0.7, label=gender, bins=20)
-        axes[0, 1].set_title('Weight Distribution by Gender', fontsize=14, fontweight='bold')
-        axes[0, 1].set_xlabel('Weight (kg)')
-        axes[0, 1].set_ylabel('Frequency')
-        axes[0, 1].legend()
+            ax.hist(data, alpha=0.7, label=gender, bins=20)
+        ax.set_title('Weight Distribution by Gender', fontsize=16, fontweight='bold')
+        ax.set_xlabel('Weight (kg)')
+        ax.set_ylabel('Frequency')
+        ax.legend()
         
-        # 3. BMI Distribution Analysis
-        axes[0, 2].hist(self.df_training['bmi'], bins=25, color=self.colors['primary'], 
-                       alpha=0.7, edgecolor='black')
+        plt.tight_layout()
+        plt.savefig(f'{self.save_dir}/12_weight_by_gender.png', 
+                   dpi=300, bbox_inches='tight', facecolor='white')
+        plt.close()
+    
+    def create_bmi_distribution_with_categories(self):
+        """BMI distribution with WHO categories"""
+        fig, ax = plt.subplots(figsize=(12, 8))
+        ax.hist(self.df_training['bmi'], bins=25, color=self.colors['primary'], 
+               alpha=0.7, edgecolor='black')
         
         # Add BMI category lines
         bmi_lines = [18.5, 25, 30]
@@ -358,612 +445,813 @@ class XGFitnessVisualizationSuite:
         colors_lines = ['orange', 'red', 'darkred']
         
         for line, label, color in zip(bmi_lines, bmi_labels, colors_lines):
-            axes[0, 2].axvline(line, color=color, linestyle='--', alpha=0.8, label=label)
+            ax.axvline(line, color=color, linestyle='--', alpha=0.8, label=label)
         
-        axes[0, 2].set_title('BMI Distribution with WHO Categories', fontsize=14, fontweight='bold')
-        axes[0, 2].set_xlabel('BMI')
-        axes[0, 2].set_ylabel('Frequency')
-        axes[0, 2].legend()
-        
-        # 4. BMR vs Age (colored by gender)
-        for i, gender in enumerate(['Male', 'Female']):
-            data = self.df_training[self.df_training['gender'] == gender]
-            axes[1, 0].scatter(data['age'], data['bmr'], alpha=0.6, 
-                             label=gender, s=20)
-        axes[1, 0].set_title('BMR vs Age by Gender', fontsize=14, fontweight='bold')
-        axes[1, 0].set_xlabel('Age (years)')
-        axes[1, 0].set_ylabel('BMR (calories)')
-        axes[1, 0].legend()
-        
-        # 5. TDEE Distribution by Activity Level
-        activity_levels = self.df_training['activity_level'].unique()
-        for level in activity_levels:
-            data = self.df_training[self.df_training['activity_level'] == level]['tdee']
-            axes[1, 1].hist(data, alpha=0.7, label=level, bins=15)
-        axes[1, 1].set_title('TDEE Distribution by Activity Level', fontsize=14, fontweight='bold')
-        axes[1, 1].set_xlabel('TDEE (calories)')
-        axes[1, 1].set_ylabel('Frequency')
-        axes[1, 1].legend()
-        
-        # 6. Age vs BMI Relationship (colored by fitness goal)
-        for goal in self.df_training['fitness_goal'].unique():
-            data = self.df_training[self.df_training['fitness_goal'] == goal]
-            axes[1, 2].scatter(data['age'], data['bmi'], alpha=0.6, 
-                             label=goal, s=20)
-        axes[1, 2].set_title('Age vs BMI by Fitness Goal', fontsize=14, fontweight='bold')
-        axes[1, 2].set_xlabel('Age (years)')
-        axes[1, 2].set_ylabel('BMI')
-        axes[1, 2].legend()
+        ax.set_title('BMI Distribution with WHO Categories', fontsize=16, fontweight='bold')
+        ax.set_xlabel('BMI')
+        ax.set_ylabel('Frequency')
+        ax.legend()
         
         plt.tight_layout()
-        plt.savefig(f'{self.save_dir}/03_demographic_physiological_analysis.png', 
+        plt.savefig(f'{self.save_dir}/13_bmi_distribution_with_categories.png', 
                    dpi=300, bbox_inches='tight', facecolor='white')
         plt.close()
     
-    def create_template_analysis(self):
-        """Create template assignment analysis"""
-        fig, axes = plt.subplots(2, 2, figsize=(16, 12))
-        fig.suptitle('Template Assignment Analysis', fontsize=18, fontweight='bold')
+    def create_bmr_vs_age_by_gender(self):
+        """BMR vs age colored by gender"""
+        fig, ax = plt.subplots(figsize=(12, 8))
+        for gender in ['Male', 'Female']:
+            data = self.df_training[self.df_training['gender'] == gender]
+            ax.scatter(data['age'], data['bmr'], alpha=0.6, 
+                      label=gender, s=30)
+        ax.set_title('BMR vs Age by Gender', fontsize=16, fontweight='bold')
+        ax.set_xlabel('Age (years)')
+        ax.set_ylabel('BMR (calories)')
+        ax.legend()
         
-        # 1. Workout Template Distribution
+        plt.tight_layout()
+        plt.savefig(f'{self.save_dir}/14_bmr_vs_age_by_gender.png', 
+                   dpi=300, bbox_inches='tight', facecolor='white')
+        plt.close()
+    
+    def create_tdee_by_activity_level(self):
+        """TDEE distribution by activity level"""
+        fig, ax = plt.subplots(figsize=(12, 8))
+        activity_levels = self.df_training['activity_level'].unique()
+        for level in activity_levels:
+            data = self.df_training[self.df_training['activity_level'] == level]['tdee']
+            ax.hist(data, alpha=0.7, label=level, bins=15)
+        ax.set_title('TDEE Distribution by Activity Level', fontsize=16, fontweight='bold')
+        ax.set_xlabel('TDEE (calories)')
+        ax.set_ylabel('Frequency')
+        ax.legend()
+        
+        plt.tight_layout()
+        plt.savefig(f'{self.save_dir}/15_tdee_by_activity_level.png', 
+                   dpi=300, bbox_inches='tight', facecolor='white')
+        plt.close()
+    
+    def create_age_vs_bmi_by_goal(self):
+        """Age vs BMI colored by fitness goal"""
+        fig, ax = plt.subplots(figsize=(12, 8))
+        for goal in self.df_training['fitness_goal'].unique():
+            data = self.df_training[self.df_training['fitness_goal'] == goal]
+            ax.scatter(data['age'], data['bmi'], alpha=0.6, 
+                      label=goal, s=30)
+        ax.set_title('Age vs BMI by Fitness Goal', fontsize=16, fontweight='bold')
+        ax.set_xlabel('Age (years)')
+        ax.set_ylabel('BMI')
+        ax.legend()
+        
+        plt.tight_layout()
+        plt.savefig(f'{self.save_dir}/16_age_vs_bmi_by_goal.png', 
+                   dpi=300, bbox_inches='tight', facecolor='white')
+        plt.close()
+    
+    # Template Analysis Individual Charts
+    def create_workout_template_distribution(self):
+        """Workout template distribution"""
+        fig, ax = plt.subplots(figsize=(12, 8))
         workout_counts = self.df_training['workout_template_id'].value_counts().sort_index()
-        bars = axes[0, 0].bar(
+        bars = ax.bar(
             workout_counts.index, 
             workout_counts.values, 
             color=self.colors['primary'],
             alpha=0.8
         )
-        axes[0, 0].set_title('Workout Template Distribution', fontsize=14, fontweight='bold')
-        axes[0, 0].set_xlabel('Workout Template ID')
-        axes[0, 0].set_ylabel('Number of Assignments')
+        ax.set_title('Workout Template Distribution', fontsize=16, fontweight='bold')
+        ax.set_xlabel('Workout Template ID')
+        ax.set_ylabel('Number of Assignments')
         
         # Add value labels
         for bar in bars:
             height = bar.get_height()
-            axes[0, 0].annotate(f'{int(height)}',
-                              xy=(bar.get_x() + bar.get_width() / 2, height),
-                              xytext=(0, 3), textcoords="offset points",
-                              ha='center', va='bottom', fontweight='bold')
+            ax.annotate(f'{int(height)}',
+                       xy=(bar.get_x() + bar.get_width() / 2, height),
+                       xytext=(0, 3), textcoords="offset points",
+                       ha='center', va='bottom', fontweight='bold')
         
-        # 2. Nutrition Template Distribution
+        plt.tight_layout()
+        plt.savefig(f'{self.save_dir}/17_workout_template_distribution.png', 
+                   dpi=300, bbox_inches='tight', facecolor='white')
+        plt.close()
+    
+    def create_nutrition_template_distribution(self):
+        """Nutrition template distribution"""
+        fig, ax = plt.subplots(figsize=(12, 8))
         nutrition_counts = self.df_training['nutrition_template_id'].value_counts().sort_index()
-        bars = axes[0, 1].bar(
+        bars = ax.bar(
             nutrition_counts.index, 
             nutrition_counts.values, 
             color=self.colors['success'],
             alpha=0.8
         )
-        axes[0, 1].set_title('Nutrition Template Distribution', fontsize=14, fontweight='bold')
-        axes[0, 1].set_xlabel('Nutrition Template ID')
-        axes[0, 1].set_ylabel('Number of Assignments')
+        ax.set_title('Nutrition Template Distribution', fontsize=16, fontweight='bold')
+        ax.set_xlabel('Nutrition Template ID')
+        ax.set_ylabel('Number of Assignments')
         
         # Add value labels
         for bar in bars:
             height = bar.get_height()
-            axes[0, 1].annotate(f'{int(height)}',
-                              xy=(bar.get_x() + bar.get_width() / 2, height),
-                              xytext=(0, 3), textcoords="offset points",
-                              ha='center', va='bottom', fontweight='bold')
+            ax.annotate(f'{int(height)}',
+                       xy=(bar.get_x() + bar.get_width() / 2, height),
+                       xytext=(0, 3), textcoords="offset points",
+                       ha='center', va='bottom', fontweight='bold')
         
-        # 3. Goal-Activity-BMI Heatmap for Fat Loss
+        plt.tight_layout()
+        plt.savefig(f'{self.save_dir}/18_nutrition_template_distribution.png', 
+                   dpi=300, bbox_inches='tight', facecolor='white')
+        plt.close()
+    
+    def create_fat_loss_activity_bmi_heatmap(self):
+        """Fat loss: activity vs BMI heatmap"""
+        fig, ax = plt.subplots(figsize=(10, 8))
         goal_data = self.df_training[self.df_training['fitness_goal'] == 'Fat Loss']
         if len(goal_data) > 0:
             pivot_table = goal_data.groupby(['activity_level', 'bmi_category']).size().unstack(fill_value=0)
-            sns.heatmap(pivot_table, annot=True, fmt='d', cmap='Blues', ax=axes[1, 0])
-            axes[1, 0].set_title(f'Fat Loss: Activity vs BMI\n({len(goal_data)} samples)', 
-                               fontsize=14, fontweight='bold')
-            axes[1, 0].set_xlabel('BMI Category')
-            axes[1, 0].set_ylabel('Activity Level')
+            sns.heatmap(pivot_table, annot=True, fmt='d', cmap='Blues', ax=ax)
+            ax.set_title(f'Fat Loss: Activity vs BMI\n({len(goal_data)} samples)', 
+                        fontsize=16, fontweight='bold')
+            ax.set_xlabel('BMI Category')
+            ax.set_ylabel('Activity Level')
         
-        # 4. Template Combination Analysis
+        plt.tight_layout()
+        plt.savefig(f'{self.save_dir}/19_fat_loss_activity_bmi_heatmap.png', 
+                   dpi=300, bbox_inches='tight', facecolor='white')
+        plt.close()
+    
+    def create_top_template_combinations(self):
+        """Top 15 template combinations"""
+        fig, ax = plt.subplots(figsize=(14, 8))
         template_combo = self.df_training.groupby(['workout_template_id', 'nutrition_template_id']).size()
         top_combos = template_combo.nlargest(15)
         
-        bars = axes[1, 1].bar(
+        bars = ax.bar(
             range(len(top_combos)), 
             top_combos.values, 
             color=self.colors['accent'],
             alpha=0.8
         )
-        axes[1, 1].set_title('Top 15 Template Combinations', fontsize=14, fontweight='bold')
-        axes[1, 1].set_ylabel('Frequency')
-        axes[1, 1].set_xlabel('Template Combination Rank')
+        ax.set_title('Top 15 Template Combinations', fontsize=16, fontweight='bold')
+        ax.set_ylabel('Frequency')
+        ax.set_xlabel('Template Combination Rank')
         
         # Add value labels
         for i, bar in enumerate(bars):
             height = bar.get_height()
             combo_idx = top_combos.index[i]
-            axes[1, 1].annotate(f'{int(height)}\n({combo_idx[0]},{combo_idx[1]})',
-                              xy=(bar.get_x() + bar.get_width() / 2, height),
-                              xytext=(0, 3), textcoords="offset points",
-                              ha='center', va='bottom', fontsize=8)
+            ax.annotate(f'{int(height)}\n({combo_idx[0]},{combo_idx[1]})',
+                       xy=(bar.get_x() + bar.get_width() / 2, height),
+                       xytext=(0, 3), textcoords="offset points",
+                       ha='center', va='bottom', fontsize=8)
         
         plt.tight_layout()
-        plt.savefig(f'{self.save_dir}/04_template_assignment_analysis.png', 
+        plt.savefig(f'{self.save_dir}/20_top_template_combinations.png', 
                    dpi=300, bbox_inches='tight', facecolor='white')
         plt.close()
     
-    def create_model_performance_analysis(self):
-        """Create comprehensive model performance analysis"""
+    # Model Performance Side-by-Side Comparisons
+    def create_workout_model_comparison(self):
+        """Side-by-side workout model performance comparison with Rule-Based Baseline"""
         if not self.model.is_trained:
-            print("⚠️  Models not trained - skipping performance analysis")
             return
-        
+            
         # Get test data
-        X, y_workout, y_nutrition, df_enhanced = self.model.prepare_training_data(self.df_training)
-        test_mask = df_enhanced['split'] == 'test'
-        X_test = X[test_mask]
-        y_w_test = y_workout[test_mask]
-        y_n_test = y_nutrition[test_mask]
-        
-        if len(X_test) == 0:
-            print("⚠️  No test data available for performance analysis")
+        test_data = self.df_training[self.df_training['split'] == 'test']
+        if len(test_data) == 0:
+            print("⚠️  No test data available for workout model comparison")
             return
         
-        # Scale test data
-        X_test_xgb = self.model.scaler.transform(X_test)
-        y_w_test_encoded = self.model.workout_label_encoder.transform(y_w_test)
-        y_n_test_encoded = self.model.nutrition_label_encoder.transform(y_n_test)
+        # Get actual labels
+        y_w_test = test_data['workout_template_id'].values
         
-        # Get XGBoost predictions
-        xgb_w_pred = self.model.workout_model.predict(X_test_xgb)
-        xgb_n_pred = self.model.nutrition_model.predict(X_test_xgb)
-        xgb_w_proba = self.model.workout_model.predict_proba(X_test_xgb)
-        xgb_n_proba = self.model.nutrition_model.predict_proba(X_test_xgb)
+        # Get Rule-Based Baseline predictions using model's method
+        try:
+            rule_w_pred, _ = self.model.predict_rule_based(test_data)
+        except AttributeError:
+            print("⚠️  Model does not have predict_rule_based method, skipping rule-based comparison")
+            return
         
-        # Get Random Forest predictions if available
-        rf_available = hasattr(self.model, 'workout_rf_model') and self.model.workout_rf_model
-        if rf_available:
-            X_test_rf = self.model.rf_scaler.transform(X_test)
-            rf_w_pred = self.model.workout_rf_model.predict(X_test_rf)
-            rf_n_pred = self.model.nutrition_rf_model.predict(X_test_rf)
-            rf_w_proba = self.model.workout_rf_model.predict_proba(X_test_rf)
-            rf_n_proba = self.model.nutrition_rf_model.predict_proba(X_test_rf)
+        # Prepare test data with proper feature engineering
+        try:
+            X, y_workout, y_nutrition, df_enhanced = self.model.prepare_training_data(self.df_training)
+            test_mask = df_enhanced['split'] == 'test'
+            X_test = X[test_mask]
+            
+            # Scale features for XGBoost
+            X_test_xgb = self.model.scaler.transform(X_test)
+            xgb_w_pred = self.model.workout_model.predict(X_test_xgb)
+            
+            # Convert back to template IDs
+            xgb_w_pred_templates = self.model.workout_label_encoder.inverse_transform(xgb_w_pred)
+            
+            print(f"✅ XGBoost predictions obtained successfully")
+        except Exception as e:
+            print(f"⚠️  Error getting XGBoost predictions: {e}")
+            return
         
-        # Create performance comparison chart
-        fig, axes = plt.subplots(1, 2, figsize=(16, 6))
-        fig.suptitle('Model Performance Comparison: XGBoost vs Random Forest', 
-                    fontsize=18, fontweight='bold')
-        
-        # Workout model metrics
-        workout_metrics = {
-            'XGBoost': [
-                accuracy_score(y_w_test_encoded, xgb_w_pred),
-                f1_score(y_w_test_encoded, xgb_w_pred, average='weighted'),
-                precision_score(y_w_test_encoded, xgb_w_pred, average='weighted'),
-                recall_score(y_w_test_encoded, xgb_w_pred, average='weighted')
-            ]
-        }
+        # Check RF availability and get predictions
+        rf_available = (hasattr(self.model, 'workout_rf_model') and 
+                       self.model.workout_rf_model is not None)
         
         if rf_available:
-            workout_metrics['Random Forest'] = [
-                accuracy_score(y_w_test_encoded, rf_w_pred),
-                f1_score(y_w_test_encoded, rf_w_pred, average='weighted'),
-                precision_score(y_w_test_encoded, rf_w_pred, average='weighted'),
-                recall_score(y_w_test_encoded, rf_w_pred, average='weighted')
-            ]
+            try:
+                X_test_rf = self.model.rf_scaler.transform(X_test)
+                rf_w_pred = self.model.workout_rf_model.predict(X_test_rf)
+                rf_w_pred_templates = self.model.workout_rf_label_encoder.inverse_transform(rf_w_pred)
+                print(f"✅ RF predictions obtained successfully")
+            except Exception as e:
+                print(f"⚠️  Error getting RF predictions: {e}")
+                rf_available = False
         
-        # Plot workout metrics
-        x = np.arange(4)
-        width = 0.35
+        # Calculate metrics for all models
         metrics_labels = ['Accuracy', 'F1-Score', 'Precision', 'Recall']
         
-        bars1 = axes[0].bar(x - width/2, workout_metrics['XGBoost'], width, 
-                           label='XGBoost', color=self.colors['xgboost'], alpha=0.8)
+        # Rule-Based metrics
+        rule_metrics = [
+            accuracy_score(y_w_test, rule_w_pred),
+            f1_score(y_w_test, rule_w_pred, average='weighted'),
+            precision_score(y_w_test, rule_w_pred, average='weighted'),
+            recall_score(y_w_test, rule_w_pred, average='weighted')
+        ]
+        
+        # XGBoost metrics
+        xgb_metrics = [
+            accuracy_score(y_w_test, xgb_w_pred_templates),
+            f1_score(y_w_test, xgb_w_pred_templates, average='weighted'),
+            precision_score(y_w_test, xgb_w_pred_templates, average='weighted'),
+            recall_score(y_w_test, xgb_w_pred_templates, average='weighted')
+        ]
+        
+        # Create the comparison chart
+        fig, ax = plt.subplots(figsize=(14, 8))
+        x = np.arange(len(metrics_labels))
+        width = 0.25
+        
+        # Plot bars
+        ax.bar(x - width, rule_metrics, width, label='Rule-Based', color=self.colors['rule_based'], alpha=0.8)
+        ax.bar(x, xgb_metrics, width, label='XGBoost', color=self.colors['xgboost'], alpha=0.8)
         
         if rf_available:
-            bars2 = axes[0].bar(x + width/2, workout_metrics['Random Forest'], width, 
-                               label='Random Forest', color=self.colors['random_forest'], alpha=0.8)
-        
-        axes[0].set_title('Workout Model Performance', fontsize=14, fontweight='bold')
-        axes[0].set_ylabel('Score')
-        axes[0].set_xticks(x)
-        axes[0].set_xticklabels(metrics_labels, rotation=45)
-        axes[0].legend()
-        axes[0].set_ylim(0, 1)
-        
-        # Add value labels
-        for bars in [bars1] + ([bars2] if rf_available else []):
-            for bar in bars:
-                height = bar.get_height()
-                axes[0].annotate(f'{height:.3f}',
-                               xy=(bar.get_x() + bar.get_width() / 2, height),
-                               xytext=(0, 3), textcoords="offset points",
-                               ha='center', va='bottom', fontweight='bold', fontsize=9)
-        
-        # Nutrition model metrics
-        nutrition_metrics = {
-            'XGBoost': [
-                accuracy_score(y_n_test_encoded, xgb_n_pred),
-                f1_score(y_n_test_encoded, xgb_n_pred, average='weighted'),
-                precision_score(y_n_test_encoded, xgb_n_pred, average='weighted'),
-                recall_score(y_n_test_encoded, xgb_n_pred, average='weighted')
+            # Random Forest metrics
+            rf_metrics = [
+                accuracy_score(y_w_test, rf_w_pred_templates),
+                f1_score(y_w_test, rf_w_pred_templates, average='weighted'),
+                precision_score(y_w_test, rf_w_pred_templates, average='weighted'),
+                recall_score(y_w_test, rf_w_pred_templates, average='weighted')
             ]
-        }
+            ax.bar(x + width, rf_metrics, width, label='Random Forest', color=self.colors['random_forest'], alpha=0.8)
+        
+        # Customize chart
+        ax.set_xlabel('Metrics', fontsize=12, fontweight='bold')
+        ax.set_ylabel('Score', fontsize=12, fontweight='bold')
+        ax.set_title('Workout Model Performance Comparison', fontsize=14, fontweight='bold')
+        ax.set_xticks(x)
+        ax.set_xticklabels(metrics_labels)
+        ax.legend()
+        ax.grid(True, alpha=0.3)
+        
+        # Add value labels on bars
+        for i, v in enumerate(rule_metrics):
+            ax.text(i - width, v + 0.01, f'{v:.3f}', ha='center', va='bottom', fontsize=9)
+        for i, v in enumerate(xgb_metrics):
+            ax.text(i, v + 0.01, f'{v:.3f}', ha='center', va='bottom', fontsize=9)
+        if rf_available:
+            for i, v in enumerate(rf_metrics):
+                ax.text(i + width, v + 0.01, f'{v:.3f}', ha='center', va='bottom', fontsize=9)
+        
+        plt.tight_layout()
+        plt.savefig(f'{self.save_dir}/21_workout_model_comparison.png', dpi=300, bbox_inches='tight')
+        plt.close()
+        
+        print(f"✅ Workout model comparison chart created successfully")
+    
+    def create_nutrition_model_comparison(self):
+        """Side-by-side nutrition model performance comparison with Rule-Based Baseline"""
+        if not self.model.is_trained:
+            return
+            
+        # Get test data
+        test_data = self.df_training[self.df_training['split'] == 'test']
+        if len(test_data) == 0:
+            print("⚠️  No test data available for nutrition model comparison")
+            return
+        
+        # Get actual labels
+        y_n_test = test_data['nutrition_template_id'].values
+        
+        # Get Rule-Based Baseline predictions using model's method
+        try:
+            _, rule_n_pred = self.model.predict_rule_based(test_data)
+        except AttributeError:
+            print("⚠️  Model does not have predict_rule_based method, skipping rule-based comparison")
+            return
+        
+        # Prepare test data with proper feature engineering
+        try:
+            X, y_workout, y_nutrition, df_enhanced = self.model.prepare_training_data(self.df_training)
+            test_mask = df_enhanced['split'] == 'test'
+            X_test = X[test_mask]
+            
+            # Scale features for XGBoost
+            X_test_xgb = self.model.scaler.transform(X_test)
+            xgb_n_pred = self.model.nutrition_model.predict(X_test_xgb)
+            
+            # Convert back to template IDs
+            xgb_n_pred_templates = self.model.nutrition_label_encoder.inverse_transform(xgb_n_pred)
+            
+            print(f"✅ XGBoost nutrition predictions obtained successfully")
+        except Exception as e:
+            print(f"⚠️  Error getting XGBoost nutrition predictions: {e}")
+            return
+        
+        # Check RF availability and get predictions
+        rf_available = (hasattr(self.model, 'nutrition_rf_model') and 
+                       self.model.nutrition_rf_model is not None)
         
         if rf_available:
-            nutrition_metrics['Random Forest'] = [
-                accuracy_score(y_n_test_encoded, rf_n_pred),
-                f1_score(y_n_test_encoded, rf_n_pred, average='weighted'),
-                precision_score(y_n_test_encoded, rf_n_pred, average='weighted'),
-                recall_score(y_n_test_encoded, rf_n_pred, average='weighted')
+            try:
+                X_test_rf = self.model.rf_scaler.transform(X_test)
+                rf_n_pred = self.model.nutrition_rf_model.predict(X_test_rf)
+                rf_n_pred_templates = self.model.nutrition_rf_label_encoder.inverse_transform(rf_n_pred)
+                print(f"✅ RF nutrition predictions obtained successfully")
+            except Exception as e:
+                print(f"⚠️  Error getting RF nutrition predictions: {e}")
+                rf_available = False
+        
+        # Calculate metrics for all models
+        metrics_labels = ['Accuracy', 'F1-Score', 'Precision', 'Recall']
+        
+        # Rule-Based metrics
+        rule_metrics = [
+            accuracy_score(y_n_test, rule_n_pred),
+            f1_score(y_n_test, rule_n_pred, average='weighted'),
+            precision_score(y_n_test, rule_n_pred, average='weighted'),
+            recall_score(y_n_test, rule_n_pred, average='weighted')
+        ]
+        
+        # XGBoost metrics
+        xgb_metrics = [
+            accuracy_score(y_n_test, xgb_n_pred_templates),
+            f1_score(y_n_test, xgb_n_pred_templates, average='weighted'),
+            precision_score(y_n_test, xgb_n_pred_templates, average='weighted'),
+            recall_score(y_n_test, xgb_n_pred_templates, average='weighted')
+        ]
+        
+        # Create the comparison chart
+        fig, ax = plt.subplots(figsize=(14, 8))
+        x = np.arange(len(metrics_labels))
+        width = 0.25
+        
+        # Plot bars
+        ax.bar(x - width, rule_metrics, width, label='Rule-Based', color=self.colors['rule_based'], alpha=0.8)
+        ax.bar(x, xgb_metrics, width, label='XGBoost', color=self.colors['xgboost'], alpha=0.8)
+        
+        if rf_available:
+            # Random Forest metrics
+            rf_metrics = [
+                accuracy_score(y_n_test, rf_n_pred_templates),
+                f1_score(y_n_test, rf_n_pred_templates, average='weighted'),
+                precision_score(y_n_test, rf_n_pred_templates, average='weighted'),
+                recall_score(y_n_test, rf_n_pred_templates, average='weighted')
             ]
+            ax.bar(x + width, rf_metrics, width, label='Random Forest', color=self.colors['random_forest'], alpha=0.8)
         
-        # Plot nutrition metrics
-        bars3 = axes[1].bar(x - width/2, nutrition_metrics['XGBoost'], width, 
-                           label='XGBoost', color=self.colors['xgboost'], alpha=0.8)
+        # Customize chart
+        ax.set_xlabel('Metrics', fontsize=12, fontweight='bold')
+        ax.set_ylabel('Score', fontsize=12, fontweight='bold')
+        ax.set_title('Nutrition Model Performance Comparison', fontsize=14, fontweight='bold')
+        ax.set_xticks(x)
+        ax.set_xticklabels(metrics_labels)
+        ax.legend()
+        ax.grid(True, alpha=0.3)
         
+        # Add value labels on bars
+        for i, v in enumerate(rule_metrics):
+            ax.text(i - width, v + 0.01, f'{v:.3f}', ha='center', va='bottom', fontsize=9)
+        for i, v in enumerate(xgb_metrics):
+            ax.text(i, v + 0.01, f'{v:.3f}', ha='center', va='bottom', fontsize=9)
         if rf_available:
-            bars4 = axes[1].bar(x + width/2, nutrition_metrics['Random Forest'], width, 
-                               label='Random Forest', color=self.colors['random_forest'], alpha=0.8)
-        
-        axes[1].set_title('Nutrition Model Performance', fontsize=14, fontweight='bold')
-        axes[1].set_ylabel('Score')
-        axes[1].set_xticks(x)
-        axes[1].set_xticklabels(metrics_labels, rotation=45)
-        axes[1].legend()
-        axes[1].set_ylim(0, 1)
-        
-        # Add value labels
-        for bars in [bars3] + ([bars4] if rf_available else []):
-            for bar in bars:
-                height = bar.get_height()
-                axes[1].annotate(f'{height:.3f}',
-                               xy=(bar.get_x() + bar.get_width() / 2, height),
-                               xytext=(0, 3), textcoords="offset points",
-                               ha='center', va='bottom', fontweight='bold', fontsize=9)
+            for i, v in enumerate(rf_metrics):
+                ax.text(i + width, v + 0.01, f'{v:.3f}', ha='center', va='bottom', fontsize=9)
         
         plt.tight_layout()
-        plt.savefig(f'{self.save_dir}/05_model_performance_comparison.png', 
-                   dpi=300, bbox_inches='tight', facecolor='white')
+        plt.savefig(f'{self.save_dir}/22_nutrition_model_comparison.png', dpi=300, bbox_inches='tight')
         plt.close()
+        
+        print(f"✅ Nutrition model comparison chart created successfully")
     
-    def create_confusion_matrices(self):
-        """Create confusion matrices for all models"""
+    def create_overall_model_performance(self):
+        """Overall model performance summary with Rule-Based Baseline"""
         if not self.model.is_trained:
             return
-        
-        # Get test data
-        X, y_workout, y_nutrition, df_enhanced = self.model.prepare_training_data(self.df_training)
-        test_mask = df_enhanced['split'] == 'test'
-        X_test = X[test_mask]
-        y_w_test = y_workout[test_mask]
-        y_n_test = y_nutrition[test_mask]
-        
-        if len(X_test) == 0:
+            
+        # Get test data for rule-based baseline
+        test_data = self.df_training[self.df_training['split'] == 'test']
+        if len(test_data) == 0:
+            print("⚠️  No test data available for overall performance comparison")
             return
         
-        # Scale test data
-        X_test_xgb = self.model.scaler.transform(X_test)
-        y_w_test_encoded = self.model.workout_label_encoder.transform(y_w_test)
-        y_n_test_encoded = self.model.nutrition_label_encoder.transform(y_n_test)
+        # Get Rule-Based Baseline predictions and calculate accuracy
+        try:
+            rule_w_pred, rule_n_pred = self.model.predict_rule_based(test_data)
+        except AttributeError:
+            print("⚠️  Model does not have predict_rule_based method, skipping rule-based comparison")
+            return
         
-        # Get predictions
-        xgb_w_pred = self.model.workout_model.predict(X_test_xgb)
-        xgb_n_pred = self.model.nutrition_model.predict(X_test_xgb)
+        y_w_test = test_data['workout_template_id'].values
+        y_n_test = test_data['nutrition_template_id'].values
         
-        rf_available = hasattr(self.model, 'workout_rf_model') and self.model.workout_rf_model
+        rule_scores = [
+            accuracy_score(y_w_test, rule_w_pred),
+            accuracy_score(y_n_test, rule_n_pred)
+        ]
+        
+        # Get XGBoost info
+        xgb_info = self.model.training_info if hasattr(self.model, 'training_info') else {}
+        
+        # Check RF availability
+        rf_available = (hasattr(self.model, 'rf_training_info') and 
+                       self.model.rf_training_info is not None and
+                       hasattr(self.model, 'workout_rf_model') and 
+                       self.model.workout_rf_model is not None)
+        
+        fig, ax = plt.subplots(figsize=(14, 8))
+        
+        models = ['Workout Models', 'Nutrition Models']
+        
+        # Get XGBoost scores
+        xgb_scores = [
+            xgb_info.get('workout_accuracy', 0.0), 
+            xgb_info.get('nutrition_accuracy', 0.0)
+        ]
+        
+        x = np.arange(len(models))
+        width = 0.25
+        
+        # Plot bars
+        ax.bar(x - width, rule_scores, width, label='Rule-Based', color=self.colors['rule_based'], alpha=0.8)
+        ax.bar(x, xgb_scores, width, label='XGBoost', color=self.colors['xgboost'], alpha=0.8)
+        
         if rf_available:
-            X_test_rf = self.model.rf_scaler.transform(X_test)
-            rf_w_pred = self.model.workout_rf_model.predict(X_test_rf)
-            rf_n_pred = self.model.nutrition_rf_model.predict(X_test_rf)
+            # Get Random Forest scores
+            rf_info = self.model.rf_training_info
+            rf_scores = [
+                rf_info.get('rf_workout_accuracy', 0.0),
+                rf_info.get('rf_nutrition_accuracy', 0.0)
+            ]
+            ax.bar(x + width, rf_scores, width, label='Random Forest', color=self.colors['random_forest'], alpha=0.8)
         
-        # Create confusion matrices
+        # Customize chart
+        ax.set_xlabel('Model Types', fontsize=12, fontweight='bold')
+        ax.set_ylabel('Accuracy Score', fontsize=12, fontweight='bold')
+        ax.set_title('Overall Model Performance Comparison', fontsize=14, fontweight='bold')
+        ax.set_xticks(x)
+        ax.set_xticklabels(models)
+        ax.legend()
+        ax.grid(True, alpha=0.3)
+        ax.set_ylim(0, 1)
+        
+        # Add value labels on bars
+        for i, v in enumerate(rule_scores):
+            ax.text(i - width, v + 0.01, f'{v:.3f}', ha='center', va='bottom', fontsize=9)
+        for i, v in enumerate(xgb_scores):
+            ax.text(i, v + 0.01, f'{v:.3f}', ha='center', va='bottom', fontsize=9)
         if rf_available:
-            fig, axes = plt.subplots(2, 2, figsize=(16, 12))
-            fig.suptitle('Confusion Matrices: All 4 Models', fontsize=18, fontweight='bold')
-            
-            # XGBoost Workout
-            cm_xgb_w = confusion_matrix(y_w_test_encoded, xgb_w_pred)
-            sns.heatmap(cm_xgb_w, annot=True, fmt='d', cmap='Blues', ax=axes[0, 0])
-            axes[0, 0].set_title(f'XGBoost Workout Model\nAccuracy: {accuracy_score(y_w_test_encoded, xgb_w_pred):.3f}', 
-                               fontsize=12, fontweight='bold')
-            axes[0, 0].set_xlabel('Predicted Template ID')
-            axes[0, 0].set_ylabel('Actual Template ID')
-            
-            # XGBoost Nutrition
-            cm_xgb_n = confusion_matrix(y_n_test_encoded, xgb_n_pred)
-            sns.heatmap(cm_xgb_n, annot=True, fmt='d', cmap='Blues', ax=axes[0, 1])
-            axes[0, 1].set_title(f'XGBoost Nutrition Model\nAccuracy: {accuracy_score(y_n_test_encoded, xgb_n_pred):.3f}', 
-                               fontsize=12, fontweight='bold')
-            axes[0, 1].set_xlabel('Predicted Template ID')
-            axes[0, 1].set_ylabel('Actual Template ID')
-            
-            # Random Forest Workout
-            cm_rf_w = confusion_matrix(y_w_test_encoded, rf_w_pred)
-            sns.heatmap(cm_rf_w, annot=True, fmt='d', cmap='Oranges', ax=axes[1, 0])
-            axes[1, 0].set_title(f'Random Forest Workout Model\nAccuracy: {accuracy_score(y_w_test_encoded, rf_w_pred):.3f}', 
-                               fontsize=12, fontweight='bold')
-            axes[1, 0].set_xlabel('Predicted Template ID')
-            axes[1, 0].set_ylabel('Actual Template ID')
-            
-            # Random Forest Nutrition
-            cm_rf_n = confusion_matrix(y_n_test_encoded, rf_n_pred)
-            sns.heatmap(cm_rf_n, annot=True, fmt='d', cmap='Oranges', ax=axes[1, 1])
-            axes[1, 1].set_title(f'Random Forest Nutrition Model\nAccuracy: {accuracy_score(y_n_test_encoded, rf_n_pred):.3f}', 
-                               fontsize=12, fontweight='bold')
-            axes[1, 1].set_xlabel('Predicted Template ID')
-            axes[1, 1].set_ylabel('Actual Template ID')
-        else:
-            # Only XGBoost models
-            fig, axes = plt.subplots(1, 2, figsize=(16, 6))
-            fig.suptitle('Confusion Matrices: XGBoost Models', fontsize=18, fontweight='bold')
-            
-            # XGBoost Workout
-            cm_xgb_w = confusion_matrix(y_w_test_encoded, xgb_w_pred)
-            sns.heatmap(cm_xgb_w, annot=True, fmt='d', cmap='Blues', ax=axes[0])
-            axes[0].set_title(f'XGBoost Workout Model\nAccuracy: {accuracy_score(y_w_test_encoded, xgb_w_pred):.3f}', 
-                            fontsize=12, fontweight='bold')
-            axes[0].set_xlabel('Predicted Template ID')
-            axes[0].set_ylabel('Actual Template ID')
-            
-            # XGBoost Nutrition
-            cm_xgb_n = confusion_matrix(y_n_test_encoded, xgb_n_pred)
-            sns.heatmap(cm_xgb_n, annot=True, fmt='d', cmap='Blues', ax=axes[1])
-            axes[1].set_title(f'XGBoost Nutrition Model\nAccuracy: {accuracy_score(y_n_test_encoded, xgb_n_pred):.3f}', 
-                            fontsize=12, fontweight='bold')
-            axes[1].set_xlabel('Predicted Template ID')
-            axes[1].set_ylabel('Actual Template ID')
+            for i, v in enumerate(rf_scores):
+                ax.text(i + width, v + 0.01, f'{v:.3f}', ha='center', va='bottom', fontsize=9)
         
         plt.tight_layout()
-        plt.savefig(f'{self.save_dir}/06_confusion_matrices.png', 
-                   dpi=300, bbox_inches='tight', facecolor='white')
+        plt.savefig(f'{self.save_dir}/23_overall_model_performance.png', dpi=300, bbox_inches='tight')
         plt.close()
+        
+        print(f"✅ Overall model performance created with Rule-Based Baseline")
     
-    def create_roc_analysis(self):
-        """Create ROC/AUC analysis for all models"""
+    # Model Comparison Analysis with improved RF detection
+    def create_prediction_agreement(self):
+        """Model prediction agreement analysis with better RF detection"""
         if not self.model.is_trained:
             return
-        
-        # Get test data
-        X, y_workout, y_nutrition, df_enhanced = self.model.prepare_training_data(self.df_training)
-        test_mask = df_enhanced['split'] == 'test'
-        X_test = X[test_mask]
-        y_w_test = y_workout[test_mask]
-        y_n_test = y_nutrition[test_mask]
-        
-        if len(X_test) == 0:
-            return
-        
-        # Scale test data
-        X_test_xgb = self.model.scaler.transform(X_test)
-        y_w_test_encoded = self.model.workout_label_encoder.transform(y_w_test)
-        y_n_test_encoded = self.model.nutrition_label_encoder.transform(y_n_test)
-        
-        # Get prediction probabilities
-        xgb_w_proba = self.model.workout_model.predict_proba(X_test_xgb)
-        xgb_n_proba = self.model.nutrition_model.predict_proba(X_test_xgb)
-        
-        rf_available = hasattr(self.model, 'workout_rf_model') and self.model.workout_rf_model
-        if rf_available:
-            X_test_rf = self.model.rf_scaler.transform(X_test)
-            rf_w_proba = self.model.workout_rf_model.predict_proba(X_test_rf)
-            rf_n_proba = self.model.nutrition_rf_model.predict_proba(X_test_rf)
-        
-        # Get unique classes
-        workout_classes = sorted(np.unique(y_w_test_encoded))
-        nutrition_classes = sorted(np.unique(y_n_test_encoded))
-        
-        # Create ROC plots
-        if rf_available:
-            fig, axes = plt.subplots(2, 2, figsize=(16, 12))
-            fig.suptitle('ROC Curves: All 4 Models', fontsize=18, fontweight='bold')
-        else:
-            fig, axes = plt.subplots(1, 2, figsize=(16, 6))
-            fig.suptitle('ROC Curves: XGBoost Models', fontsize=18, fontweight='bold')
-            axes = [axes] if not hasattr(axes, '__len__') else axes
-        
-        colors = cycle(['aqua', 'darkorange', 'cornflowerblue', 'red', 'green', 'purple', 'brown', 'pink'])
-        
-        # XGBoost Workout ROC
-        y_w_bin = label_binarize(y_w_test_encoded, classes=workout_classes)
-        if len(workout_classes) > 2:
-            for i, color in zip(range(len(workout_classes)), colors):
-                fpr, tpr, _ = roc_curve(y_w_bin[:, i], xgb_w_proba[:, i])
-                roc_auc = auc(fpr, tpr)
-                if rf_available:
-                    axes[0, 0].plot(fpr, tpr, color=color, lw=2, label=f'Class {i+1} (AUC = {roc_auc:.2f})')
-                else:
-                    axes[0].plot(fpr, tpr, color=color, lw=2, label=f'Class {i+1} (AUC = {roc_auc:.2f})')
-        
-        ax_idx = (0, 0) if rf_available else 0
-        target_ax = axes[ax_idx[0]][ax_idx[1]] if rf_available else axes[ax_idx]
-        target_ax.plot([0, 1], [0, 1], 'k--', lw=2)
-        target_ax.set_xlim([0.0, 1.0])
-        target_ax.set_ylim([0.0, 1.05])
-        target_ax.set_xlabel('False Positive Rate')
-        target_ax.set_ylabel('True Positive Rate')
-        target_ax.set_title('XGBoost Workout Model ROC', fontsize=12, fontweight='bold')
-        target_ax.legend(loc="lower right", fontsize=8)
-        
-        # XGBoost Nutrition ROC
-        y_n_bin = label_binarize(y_n_test_encoded, classes=nutrition_classes)
-        colors = cycle(['aqua', 'darkorange', 'cornflowerblue', 'red', 'green', 'purple', 'brown', 'pink'])
-        if len(nutrition_classes) > 2:
-            for i, color in zip(range(len(nutrition_classes)), colors):
-                fpr, tpr, _ = roc_curve(y_n_bin[:, i], xgb_n_proba[:, i])
-                roc_auc = auc(fpr, tpr)
-                if rf_available:
-                    axes[0, 1].plot(fpr, tpr, color=color, lw=2, label=f'Class {i+1} (AUC = {roc_auc:.2f})')
-                else:
-                    axes[1].plot(fpr, tpr, color=color, lw=2, label=f'Class {i+1} (AUC = {roc_auc:.2f})')
-        
-        ax_idx = (0, 1) if rf_available else 1
-        target_ax = axes[ax_idx[0]][ax_idx[1]] if rf_available else axes[ax_idx]
-        target_ax.plot([0, 1], [0, 1], 'k--', lw=2)
-        target_ax.set_xlim([0.0, 1.0])
-        target_ax.set_ylim([0.0, 1.05])
-        target_ax.set_xlabel('False Positive Rate')
-        target_ax.set_ylabel('True Positive Rate')
-        target_ax.set_title('XGBoost Nutrition Model ROC', fontsize=12, fontweight='bold')
-        target_ax.legend(loc="lower right", fontsize=8)
-        
-        # Random Forest ROCs (if available)
-        if rf_available:
-            # Random Forest Workout ROC
-            colors = cycle(['aqua', 'darkorange', 'cornflowerblue', 'red', 'green', 'purple', 'brown', 'pink'])
-            if len(workout_classes) > 2:
-                for i, color in zip(range(len(workout_classes)), colors):
-                    fpr, tpr, _ = roc_curve(y_w_bin[:, i], rf_w_proba[:, i])
-                    roc_auc = auc(fpr, tpr)
-                    axes[1, 0].plot(fpr, tpr, color=color, lw=2, label=f'Class {i+1} (AUC = {roc_auc:.2f})')
             
-            axes[1, 0].plot([0, 1], [0, 1], 'k--', lw=2)
-            axes[1, 0].set_xlim([0.0, 1.0])
-            axes[1, 0].set_ylim([0.0, 1.05])
-            axes[1, 0].set_xlabel('False Positive Rate')
-            axes[1, 0].set_ylabel('True Positive Rate')
-            axes[1, 0].set_title('Random Forest Workout Model ROC', fontsize=12, fontweight='bold')
-            axes[1, 0].legend(loc="lower right", fontsize=8)
-            
-            # Random Forest Nutrition ROC
-            colors = cycle(['aqua', 'darkorange', 'cornflowerblue', 'red', 'green', 'purple', 'brown', 'pink'])
-            if len(nutrition_classes) > 2:
-                for i, color in zip(range(len(nutrition_classes)), colors):
-                    fpr, tpr, _ = roc_curve(y_n_bin[:, i], rf_n_proba[:, i])
-                    roc_auc = auc(fpr, tpr)
-                    axes[1, 1].plot(fpr, tpr, color=color, lw=2, label=f'Class {i+1} (AUC = {roc_auc:.2f})')
-            
-            axes[1, 1].plot([0, 1], [0, 1], 'k--', lw=2)
-            axes[1, 1].set_xlim([0.0, 1.0])
-            axes[1, 1].set_ylim([0.0, 1.05])
-            axes[1, 1].set_xlabel('False Positive Rate')
-            axes[1, 1].set_ylabel('True Positive Rate')
-            axes[1, 1].set_title('Random Forest Nutrition Model ROC', fontsize=12, fontweight='bold')
-            axes[1, 1].legend(loc="lower right", fontsize=8)
+        rf_available = (hasattr(self.model, 'workout_rf_model') and 
+                       self.model.workout_rf_model is not None and
+                       hasattr(self.model, 'compare_model_predictions'))
         
-        plt.tight_layout()
-        plt.savefig(f'{self.save_dir}/07_roc_analysis.png', 
-                   dpi=300, bbox_inches='tight', facecolor='white')
-        plt.close()
-    
-    def create_model_comparison(self):
-        """Create comprehensive model comparison analysis"""
-        if not self.model.is_trained:
-            return
-        
-        rf_available = hasattr(self.model, 'workout_rf_model') and self.model.workout_rf_model
         if not rf_available:
-            print("⚠️  Random Forest models not available for comparison")
+            print("⚠️  Random Forest models not available for prediction agreement analysis")
             return
-        
-        # Get comparison data
-        comparison_data = self.model.compare_model_predictions(self.df_training)
-        
+            
+        try:
+            comparison_data = self.model.compare_model_predictions(self.df_training)
+        except:
+            print("⚠️  Could not get model comparison data")
+            return
+            
         if not comparison_data:
             print("⚠️  No comparison data available")
             return
-        
-        fig, axes = plt.subplots(2, 2, figsize=(16, 12))
-        fig.suptitle('XGBoost vs Random Forest: Comprehensive Comparison', fontsize=18, fontweight='bold')
-        
-        # 1. Prediction Agreement Analysis
+            
+        # Prediction Agreement Chart
+        models = ['Workout Models', 'Nutrition Models']
         workout_diff_pct = comparison_data['workout_differences'] / comparison_data['total_test_samples'] * 100
         nutrition_diff_pct = comparison_data['nutrition_differences'] / comparison_data['total_test_samples'] * 100
-        
-        models = ['Workout Models', 'Nutrition Models']
         agreement_rates = [100 - workout_diff_pct, 100 - nutrition_diff_pct]
         disagreement_rates = [workout_diff_pct, nutrition_diff_pct]
         
         x = np.arange(len(models))
         width = 0.35
         
-        bars1 = axes[0, 0].bar(x - width/2, agreement_rates, width, 
-                              label='Agreement', color=self.colors['success'], alpha=0.8)
-        bars2 = axes[0, 0].bar(x + width/2, disagreement_rates, width, 
-                              label='Disagreement', color=self.colors['secondary'], alpha=0.8)
+        fig, ax = plt.subplots(figsize=(10, 8))
+        bars1 = ax.bar(x - width/2, agreement_rates, width, 
+                      label='Agreement', color=self.colors['success'], alpha=0.8)
+        bars2 = ax.bar(x + width/2, disagreement_rates, width, 
+                      label='Disagreement', color=self.colors['secondary'], alpha=0.8)
         
-        axes[0, 0].set_title('Model Prediction Agreement Analysis', fontsize=14, fontweight='bold')
-        axes[0, 0].set_ylabel('Percentage (%)')
-        axes[0, 0].set_xticks(x)
-        axes[0, 0].set_xticklabels(models)
-        axes[0, 0].legend()
-        axes[0, 0].set_ylim(0, 100)
+        ax.set_title('XGBoost vs Random Forest Prediction Agreement', fontsize=16, fontweight='bold')
+        ax.set_ylabel('Percentage (%)')
+        ax.set_xticks(x)
+        ax.set_xticklabels(models)
+        ax.legend()
+        ax.set_ylim(0, 100)
         
         # Add value labels
-        for bars in [bars1, bars2]:
-            for bar in bars:
-                height = bar.get_height()
-                axes[0, 0].annotate(f'{height:.1f}%',
-                                  xy=(bar.get_x() + bar.get_width() / 2, height),
-                                  xytext=(0, 3), textcoords="offset points",
-                                  ha='center', va='bottom', fontweight='bold')
+        for i, v in enumerate(agreement_rates):
+            ax.annotate(f'{v:.1f}%', (i - width/2, v), ha='center', va='bottom', fontweight='bold')
+        for i, v in enumerate(disagreement_rates):
+            ax.annotate(f'{v:.1f}%', (i + width/2, v), ha='center', va='bottom', fontweight='bold')
         
-        # 2. Performance Difference Analysis
-        xgb_info = self.model.training_info
-        rf_info = self.model.rf_training_info
+        plt.tight_layout()
+        plt.savefig(f'{self.save_dir}/32_prediction_agreement.png', 
+                   dpi=300, bbox_inches='tight', facecolor='white')
+        plt.close()
         
-        metrics = ['Accuracy', 'F1-Score', 'Precision', 'Recall']
-        xgb_workout = [xgb_info['workout_accuracy'], xgb_info['workout_f1'], 
-                      xgb_info.get('workout_precision', 0), xgb_info.get('workout_recall', 0)]
-        rf_workout = [rf_info['rf_workout_accuracy'], rf_info['rf_workout_f1'], 
-                     rf_info.get('rf_workout_precision', 0), rf_info.get('rf_workout_recall', 0)]
+        print(f"✅ Prediction agreement chart created successfully")
+    
+    def create_algorithm_diversity(self):
+        """Algorithm diversity analysis with better RF detection"""
+        if not self.model.is_trained:
+            return
+            
+        rf_available = (hasattr(self.model, 'workout_rf_model') and 
+                       self.model.workout_rf_model is not None and
+                       hasattr(self.model, 'compare_model_predictions'))
         
-        x = np.arange(len(metrics))
-        bars1 = axes[0, 1].bar(x - width/2, xgb_workout, width, 
-                              label='XGBoost', color=self.colors['xgboost'], alpha=0.8)
-        bars2 = axes[0, 1].bar(x + width/2, rf_workout, width, 
-                              label='Random Forest', color=self.colors['random_forest'], alpha=0.8)
+        if not rf_available:
+            print("⚠️  Random Forest models not available for diversity analysis")
+            return
+            
+        try:
+            comparison_data = self.model.compare_model_predictions(self.df_training)
+        except:
+            print("⚠️  Could not get model comparison data for diversity")
+            return
+            
+        if not comparison_data:
+            print("⚠️  No comparison data available for diversity")
+            return
+            
+        workout_diff_pct = comparison_data['workout_differences'] / comparison_data['total_test_samples'] * 100
+        nutrition_diff_pct = comparison_data['nutrition_differences'] / comparison_data['total_test_samples'] * 100
         
-        axes[0, 1].set_title('Workout Model Performance Comparison', fontsize=14, fontweight='bold')
-        axes[0, 1].set_ylabel('Score')
-        axes[0, 1].set_xticks(x)
-        axes[0, 1].set_xticklabels(metrics, rotation=45)
-        axes[0, 1].legend()
-        axes[0, 1].set_ylim(0, 1)
-        
-        # 3. Nutrition Model Comparison
-        xgb_nutrition = [xgb_info['nutrition_accuracy'], xgb_info['nutrition_f1'], 
-                        xgb_info.get('nutrition_precision', 0), xgb_info.get('nutrition_recall', 0)]
-        rf_nutrition = [rf_info['rf_nutrition_accuracy'], rf_info['rf_nutrition_f1'], 
-                       rf_info.get('rf_nutrition_precision', 0), rf_info.get('rf_nutrition_recall', 0)]
-        
-        bars3 = axes[1, 0].bar(x - width/2, xgb_nutrition, width, 
-                              label='XGBoost', color=self.colors['xgboost'], alpha=0.8)
-        bars4 = axes[1, 0].bar(x + width/2, rf_nutrition, width, 
-                              label='Random Forest', color=self.colors['random_forest'], alpha=0.8)
-        
-        axes[1, 0].set_title('Nutrition Model Performance Comparison', fontsize=14, fontweight='bold')
-        axes[1, 0].set_ylabel('Score')
-        axes[1, 0].set_xticks(x)
-        axes[1, 0].set_xticklabels(metrics, rotation=45)
-        axes[1, 0].legend()
-        axes[1, 0].set_ylim(0, 1)
-        
-        # 4. Algorithm Diversity Summary
         diversity_data = {
             'Metric': ['Workout Agreement', 'Nutrition Agreement', 'Overall Diversity'],
             'Value': [100 - workout_diff_pct, 100 - nutrition_diff_pct, (workout_diff_pct + nutrition_diff_pct) / 2]
         }
         
         colors_diversity = [self.colors['primary'], self.colors['accent'], self.colors['success']]
-        bars = axes[1, 1].bar(diversity_data['Metric'], diversity_data['Value'], 
-                             color=colors_diversity, alpha=0.8)
         
-        axes[1, 1].set_title('Algorithm Diversity Analysis', fontsize=14, fontweight='bold')
-        axes[1, 1].set_ylabel('Percentage (%)')
-        axes[1, 1].tick_params(axis='x', rotation=45)
-        axes[1, 1].set_ylim(0, 100)
+        fig, ax = plt.subplots(figsize=(10, 8))
+        bars = ax.bar(diversity_data['Metric'], diversity_data['Value'], color=colors_diversity, alpha=0.8)
+        ax.set_title('Algorithm Diversity Analysis (XGBoost vs Random Forest)', fontsize=16, fontweight='bold')
+        ax.set_ylabel('Percentage (%)')
+        ax.set_ylim(0, 100)
         
-        # Add value labels
         for bar in bars:
             height = bar.get_height()
-            axes[1, 1].annotate(f'{height:.1f}%',
-                              xy=(bar.get_x() + bar.get_width() / 2, height),
-                              xytext=(0, 3), textcoords="offset points",
-                              ha='center', va='bottom', fontweight='bold')
+            ax.annotate(f'{height:.1f}%', (bar.get_x() + bar.get_width() / 2, height), 
+                       ha='center', va='bottom', fontweight='bold')
         
         plt.tight_layout()
-        plt.savefig(f'{self.save_dir}/08_model_comparison_analysis.png', 
+        plt.savefig(f'{self.save_dir}/33_algorithm_diversity.png', 
                    dpi=300, bbox_inches='tight', facecolor='white')
         plt.close()
-    
-    def create_research_summary(self):
-        """Create executive research summary dashboard"""
-        fig, axes = plt.subplots(2, 3, figsize=(20, 12))
-        fig.suptitle('XGFitness AI: Research Summary Dashboard', fontsize=20, fontweight='bold')
         
-        # 1. Dataset Summary
+        print(f"✅ Algorithm diversity chart created successfully")
+    
+
+    
+
+    
+    # Individual Confusion Matrices
+    def create_individual_confusion_matrices(self):
+        """Create individual confusion matrices for all models"""
+        if not self.model.is_trained:
+            return
+            
+        X, y_workout, y_nutrition, df_enhanced = self.model.prepare_training_data(self.df_training)
+        test_mask = df_enhanced['split'] == 'test'
+        X_test = X[test_mask]
+        y_w_test = y_workout[test_mask]
+        y_n_test = y_nutrition[test_mask]
+        
+        if len(X_test) == 0:
+            return
+            
+        X_test_xgb = self.model.scaler.transform(X_test)
+        y_w_test_encoded = self.model.workout_label_encoder.transform(y_w_test)
+        y_n_test_encoded = self.model.nutrition_label_encoder.transform(y_n_test)
+        xgb_w_pred = self.model.workout_model.predict(X_test_xgb)
+        xgb_n_pred = self.model.nutrition_model.predict(X_test_xgb)
+        
+        rf_available = hasattr(self.model, 'workout_rf_model') and self.model.workout_rf_model
+        if rf_available:
+            X_test_rf = self.model.rf_scaler.transform(X_test)
+            rf_w_pred = self.model.workout_rf_model.predict(X_test_rf)
+            rf_n_pred = self.model.nutrition_rf_model.predict(X_test_rf)
+        
+        # XGBoost Workout Confusion Matrix
+        cm_xgb_w = confusion_matrix(y_w_test_encoded, xgb_w_pred)
+        fig, ax = plt.subplots(figsize=(8, 6))
+        sns.heatmap(cm_xgb_w, annot=True, fmt='d', cmap='Blues', ax=ax)
+        ax.set_title(f'XGBoost Workout Model Confusion Matrix\nAccuracy: {accuracy_score(y_w_test_encoded, xgb_w_pred):.3f}', 
+                    fontsize=14, fontweight='bold')
+        ax.set_xlabel('Predicted Template ID')
+        ax.set_ylabel('Actual Template ID')
+        plt.tight_layout()
+        plt.savefig(f'{self.save_dir}/24_confusion_xgboost_workout.png', 
+                   dpi=300, bbox_inches='tight', facecolor='white')
+        plt.close()
+        
+        # XGBoost Nutrition Confusion Matrix
+        cm_xgb_n = confusion_matrix(y_n_test_encoded, xgb_n_pred)
+        fig, ax = plt.subplots(figsize=(8, 6))
+        sns.heatmap(cm_xgb_n, annot=True, fmt='d', cmap='Blues', ax=ax)
+        ax.set_title(f'XGBoost Nutrition Model Confusion Matrix\nAccuracy: {accuracy_score(y_n_test_encoded, xgb_n_pred):.3f}', 
+                    fontsize=14, fontweight='bold')
+        ax.set_xlabel('Predicted Template ID')
+        ax.set_ylabel('Actual Template ID')
+        plt.tight_layout()
+        plt.savefig(f'{self.save_dir}/25_confusion_xgboost_nutrition.png', 
+                   dpi=300, bbox_inches='tight', facecolor='white')
+        plt.close()
+        
+        if rf_available:
+            # Random Forest Workout Confusion Matrix
+            cm_rf_w = confusion_matrix(y_w_test_encoded, rf_w_pred)
+            fig, ax = plt.subplots(figsize=(8, 6))
+            sns.heatmap(cm_rf_w, annot=True, fmt='d', cmap='Oranges', ax=ax)
+            ax.set_title(f'Random Forest Workout Model Confusion Matrix\nAccuracy: {accuracy_score(y_w_test_encoded, rf_w_pred):.3f}', 
+                        fontsize=14, fontweight='bold')
+            ax.set_xlabel('Predicted Template ID')
+            ax.set_ylabel('Actual Template ID')
+            plt.tight_layout()
+            plt.savefig(f'{self.save_dir}/26_confusion_rf_workout.png', 
+                       dpi=300, bbox_inches='tight', facecolor='white')
+            plt.close()
+            
+            # Random Forest Nutrition Confusion Matrix
+            cm_rf_n = confusion_matrix(y_n_test_encoded, rf_n_pred)
+            fig, ax = plt.subplots(figsize=(8, 6))
+            sns.heatmap(cm_rf_n, annot=True, fmt='d', cmap='Oranges', ax=ax)
+            ax.set_title(f'Random Forest Nutrition Model Confusion Matrix\nAccuracy: {accuracy_score(y_n_test_encoded, rf_n_pred):.3f}', 
+                        fontsize=14, fontweight='bold')
+            ax.set_xlabel('Predicted Template ID')
+            ax.set_ylabel('Actual Template ID')
+            plt.tight_layout()
+            plt.savefig(f'{self.save_dir}/27_confusion_rf_nutrition.png', 
+                       dpi=300, bbox_inches='tight', facecolor='white')
+            plt.close()
+    
+    # Individual ROC Curves
+    def create_individual_roc_curves(self):
+        """Create individual ROC curves for all models"""
+        if not self.model.is_trained:
+            return
+            
+        X, y_workout, y_nutrition, df_enhanced = self.model.prepare_training_data(self.df_training)
+        test_mask = df_enhanced['split'] == 'test'
+        X_test = X[test_mask]
+        y_w_test = y_workout[test_mask]
+        y_n_test = y_nutrition[test_mask]
+        
+        if len(X_test) == 0:
+            return
+            
+        X_test_xgb = self.model.scaler.transform(X_test)
+        y_w_test_encoded = self.model.workout_label_encoder.transform(y_w_test)
+        y_n_test_encoded = self.model.nutrition_label_encoder.transform(y_n_test)
+        xgb_w_proba = self.model.workout_model.predict_proba(X_test_xgb)
+        xgb_n_proba = self.model.nutrition_model.predict_proba(X_test_xgb)
+        
+        rf_available = hasattr(self.model, 'workout_rf_model') and self.model.workout_rf_model
+        if rf_available:
+            X_test_rf = self.model.rf_scaler.transform(X_test)
+            rf_w_proba = self.model.workout_rf_model.predict_proba(X_test_rf)
+            rf_n_proba = self.model.nutrition_rf_model.predict_proba(X_test_rf)
+        
+        workout_classes = sorted(np.unique(y_w_test_encoded))
+        nutrition_classes = sorted(np.unique(y_n_test_encoded))
+        
+        # XGBoost Workout ROC
+        y_w_bin = label_binarize(y_w_test_encoded, classes=workout_classes)
+        fig, ax = plt.subplots(figsize=(10, 8))
+        colors = cycle(['aqua', 'darkorange', 'cornflowerblue', 'red', 'green', 'purple', 'brown', 'pink'])
+        
+        if len(workout_classes) > 2:
+            for i, color in zip(range(len(workout_classes)), colors):
+                if i < y_w_bin.shape[1]:
+                    fpr, tpr, _ = roc_curve(y_w_bin[:, i], xgb_w_proba[:, i])
+                    roc_auc = auc(fpr, tpr)
+                    ax.plot(fpr, tpr, color=color, lw=2, label=f'Class {workout_classes[i]} (AUC = {roc_auc:.2f})')
+        
+        ax.plot([0, 1], [0, 1], 'k--', lw=2)
+        ax.set_xlim([0.0, 1.0])
+        ax.set_ylim([0.0, 1.05])
+        ax.set_xlabel('False Positive Rate')
+        ax.set_ylabel('True Positive Rate')
+        ax.set_title('XGBoost Workout Model ROC Curves', fontsize=14, fontweight='bold')
+        ax.legend(loc="lower right", fontsize=8)
+        plt.tight_layout()
+        plt.savefig(f'{self.save_dir}/28_roc_xgboost_workout.png', 
+                   dpi=300, bbox_inches='tight', facecolor='white')
+        plt.close()
+        
+        # XGBoost Nutrition ROC
+        y_n_bin = label_binarize(y_n_test_encoded, classes=nutrition_classes)
+        fig, ax = plt.subplots(figsize=(10, 8))
+        colors = cycle(['aqua', 'darkorange', 'cornflowerblue', 'red', 'green', 'purple', 'brown', 'pink'])
+        
+        if len(nutrition_classes) > 2:
+            for i, color in zip(range(len(nutrition_classes)), colors):
+                if i < y_n_bin.shape[1]:
+                    fpr, tpr, _ = roc_curve(y_n_bin[:, i], xgb_n_proba[:, i])
+                    roc_auc = auc(fpr, tpr)
+                    ax.plot(fpr, tpr, color=color, lw=2, label=f'Class {nutrition_classes[i]} (AUC = {roc_auc:.2f})')
+        
+        ax.plot([0, 1], [0, 1], 'k--', lw=2)
+        ax.set_xlim([0.0, 1.0])
+        ax.set_ylim([0.0, 1.05])
+        ax.set_xlabel('False Positive Rate')
+        ax.set_ylabel('True Positive Rate')
+        ax.set_title('XGBoost Nutrition Model ROC Curves', fontsize=14, fontweight='bold')
+        ax.legend(loc="lower right", fontsize=8)
+        plt.tight_layout()
+        plt.savefig(f'{self.save_dir}/29_roc_xgboost_nutrition.png', 
+                   dpi=300, bbox_inches='tight', facecolor='white')
+        plt.close()
+        
+        if rf_available:
+            # Random Forest Workout ROC
+            fig, ax = plt.subplots(figsize=(10, 8))
+            colors = cycle(['aqua', 'darkorange', 'cornflowerblue', 'red', 'green', 'purple', 'brown', 'pink'])
+            
+            if len(workout_classes) > 2:
+                for i, color in zip(range(len(workout_classes)), colors):
+                    if i < y_w_bin.shape[1]:
+                        fpr, tpr, _ = roc_curve(y_w_bin[:, i], rf_w_proba[:, i])
+                        roc_auc = auc(fpr, tpr)
+                        ax.plot(fpr, tpr, color=color, lw=2, label=f'Class {workout_classes[i]} (AUC = {roc_auc:.2f})')
+            
+            ax.plot([0, 1], [0, 1], 'k--', lw=2)
+            ax.set_xlim([0.0, 1.0])
+            ax.set_ylim([0.0, 1.05])
+            ax.set_xlabel('False Positive Rate')
+            ax.set_ylabel('True Positive Rate')
+            ax.set_title('Random Forest Workout Model ROC Curves', fontsize=14, fontweight='bold')
+            ax.legend(loc="lower right", fontsize=8)
+            plt.tight_layout()
+            plt.savefig(f'{self.save_dir}/30_roc_rf_workout.png', 
+                       dpi=300, bbox_inches='tight', facecolor='white')
+            plt.close()
+            
+            # Random Forest Nutrition ROC
+            fig, ax = plt.subplots(figsize=(10, 8))
+            colors = cycle(['aqua', 'darkorange', 'cornflowerblue', 'red', 'green', 'purple', 'brown', 'pink'])
+            
+            if len(nutrition_classes) > 2:
+                for i, color in zip(range(len(nutrition_classes)), colors):
+                    if i < y_n_bin.shape[1]:
+                        fpr, tpr, _ = roc_curve(y_n_bin[:, i], rf_n_proba[:, i])
+                        roc_auc = auc(fpr, tpr)
+                        ax.plot(fpr, tpr, color=color, lw=2, label=f'Class {nutrition_classes[i]} (AUC = {roc_auc:.2f})')
+            
+            ax.plot([0, 1], [0, 1], 'k--', lw=2)
+            ax.set_xlim([0.0, 1.0])
+            ax.set_ylim([0.0, 1.05])
+            ax.set_xlabel('False Positive Rate')
+            ax.set_ylabel('True Positive Rate')
+            ax.set_title('Random Forest Nutrition Model ROC Curves', fontsize=14, fontweight='bold')
+            ax.legend(loc="lower right", fontsize=8)
+            plt.tight_layout()
+            plt.savefig(f'{self.save_dir}/31_roc_rf_nutrition.png', 
+                       dpi=300, bbox_inches='tight', facecolor='white')
+            plt.close()
+    
+
+    
+    # Summary Individual Charts
+    def create_dataset_summary(self):
+        """Dataset summary chart"""
         total_samples = len(self.df_training)
         real_samples = len(self.df_training[self.df_training['data_source'] == 'real'])
         synthetic_samples = len(self.df_training[self.df_training['data_source'] == 'synthetic'])
@@ -971,119 +1259,61 @@ class XGFitnessVisualizationSuite:
         summary_data = ['Total\nSamples', 'Real\nData', 'Synthetic\nData']
         summary_values = [total_samples, real_samples, synthetic_samples]
         
-        bars = axes[0, 0].bar(summary_data, summary_values, 
-                             color=[self.colors['primary'], self.colors['success'], self.colors['accent']],
-                             alpha=0.8)
-        axes[0, 0].set_title('Dataset Summary', fontsize=14, fontweight='bold')
-        axes[0, 0].set_ylabel('Number of Samples')
+        fig, ax = plt.subplots(figsize=(10, 8))
+        bars = ax.bar(summary_data, summary_values, 
+                     color=[self.colors['primary'], self.colors['success'], self.colors['accent']],
+                     alpha=0.8)
+        ax.set_title('Dataset Summary', fontsize=16, fontweight='bold')
+        ax.set_ylabel('Number of Samples')
         
         # Add value labels
         for bar in bars:
             height = bar.get_height()
-            axes[0, 0].annotate(f'{int(height)}',
-                              xy=(bar.get_x() + bar.get_width() / 2, height),
-                              xytext=(0, 3), textcoords="offset points",
-                              ha='center', va='bottom', fontweight='bold')
+            ax.annotate(f'{int(height)}',
+                       xy=(bar.get_x() + bar.get_width() / 2, height),
+                       xytext=(0, 3), textcoords="offset points",
+                       ha='center', va='bottom', fontweight='bold')
         
-        # 2. Model Performance Summary (if models trained)
-        if self.model.is_trained:
-            xgb_info = self.model.training_info
-            performance_data = ['Workout\nAccuracy', 'Nutrition\nAccuracy', 'Average\nF1-Score']
-            avg_f1 = (xgb_info['workout_f1'] + xgb_info['nutrition_f1']) / 2
-            performance_values = [xgb_info['workout_accuracy'], xgb_info['nutrition_accuracy'], avg_f1]
-            
-            bars = axes[0, 1].bar(performance_data, performance_values, 
-                                 color=[self.colors['xgboost'], self.colors['xgboost'], self.colors['primary']],
-                                 alpha=0.8)
-            axes[0, 1].set_title('XGBoost Model Performance', fontsize=14, fontweight='bold')
-            axes[0, 1].set_ylabel('Score')
-            axes[0, 1].set_ylim(0, 1)
-            
-            # Add value labels
-            for bar in bars:
-                height = bar.get_height()
-                axes[0, 1].annotate(f'{height:.3f}',
-                                  xy=(bar.get_x() + bar.get_width() / 2, height),
-                                  xytext=(0, 3), textcoords="offset points",
-                                  ha='center', va='bottom', fontweight='bold')
-        else:
-            axes[0, 1].text(0.5, 0.5, 'Models Not\nTrained', 
-                           ha='center', va='center', fontsize=16, fontweight='bold',
-                           transform=axes[0, 1].transAxes)
-            axes[0, 1].set_title('Model Performance', fontsize=14, fontweight='bold')
-        
-        # 3. Data Quality Indicators
-        val_real = len(self.df_training[(self.df_training['split'] == 'validation') & 
-                                       (self.df_training['data_source'] == 'real')])
-        test_real = len(self.df_training[(self.df_training['split'] == 'test') & 
-                                        (self.df_training['data_source'] == 'real')])
-        val_total = len(self.df_training[self.df_training['split'] == 'validation'])
-        test_total = len(self.df_training[self.df_training['split'] == 'test'])
-        
-        val_pct = (val_real / val_total * 100) if val_total > 0 else 0
-        test_pct = (test_real / test_total * 100) if test_total > 0 else 0
-        
-        quality_data = ['Validation\nReal %', 'Test\nReal %', 'Data\nAuthenticity']
-        quality_values = [val_pct, test_pct, (val_pct + test_pct) / 2]
-        
-        bars = axes[0, 2].bar(quality_data, quality_values, 
-                             color=[self.colors['success'], self.colors['success'], self.colors['primary']],
-                             alpha=0.8)
-        axes[0, 2].set_title('Data Quality Indicators', fontsize=14, fontweight='bold')
-        axes[0, 2].set_ylabel('Percentage (%)')
-        axes[0, 2].set_ylim(0, 100)
-        
-        # Add value labels
-        for bar in bars:
-            height = bar.get_height()
-            axes[0, 2].annotate(f'{height:.1f}%',
-                              xy=(bar.get_x() + bar.get_width() / 2, height),
-                              xytext=(0, 3), textcoords="offset points",
-                              ha='center', va='bottom', fontweight='bold')
-        
-        # 4. Template Coverage Analysis
+        plt.tight_layout()
+        plt.savefig(f'{self.save_dir}/34_dataset_summary.png', 
+                   dpi=300, bbox_inches='tight', facecolor='white')
+        plt.close()
+    
+    def create_template_coverage(self):
+        """Template coverage analysis"""
         workout_templates = len(self.df_training['workout_template_id'].unique())
         nutrition_templates = len(self.df_training['nutrition_template_id'].unique())
         
         template_data = ['Workout\nTemplates', 'Nutrition\nTemplates', 'Total\nTemplates']
         template_values = [workout_templates, nutrition_templates, workout_templates + nutrition_templates]
         
-        bars = axes[1, 0].bar(template_data, template_values, 
-                             color=[self.colors['accent'], self.colors['success'], self.colors['primary']],
-                             alpha=0.8)
-        axes[1, 0].set_title('Template Coverage', fontsize=14, fontweight='bold')
-        axes[1, 0].set_ylabel('Number of Templates')
+        fig, ax = plt.subplots(figsize=(10, 8))
+        bars = ax.bar(template_data, template_values, 
+                     color=[self.colors['accent'], self.colors['success'], self.colors['primary']],
+                     alpha=0.8)
+        ax.set_title('Template Coverage Analysis', fontsize=16, fontweight='bold')
+        ax.set_ylabel('Number of Templates')
         
         # Add value labels
         for bar in bars:
             height = bar.get_height()
-            axes[1, 0].annotate(f'{int(height)}',
-                              xy=(bar.get_x() + bar.get_width() / 2, height),
-                              xytext=(0, 3), textcoords="offset points",
-                              ha='center', va='bottom', fontweight='bold')
+            ax.annotate(f'{int(height)}',
+                       xy=(bar.get_x() + bar.get_width() / 2, height),
+                       xytext=(0, 3), textcoords="offset points",
+                       ha='center', va='bottom', fontweight='bold')
         
-        # 5. Research Methodology Validation
-        methodology_aspects = ['70/15/15\nSplit', 'Real Data\nPreserved', 'Natural\nDistribution', 'Template\nValidation']
-        methodology_scores = [100, 100, 95, 98]  # Sample scores for demonstration
+        plt.tight_layout()
+        plt.savefig(f'{self.save_dir}/35_template_coverage.png', 
+                   dpi=300, bbox_inches='tight', facecolor='white')
+        plt.close()
+    
+    def create_research_findings(self):
+        """Key research findings summary with Rule-Based Baseline"""
+        total_samples = len(self.df_training)
+        real_samples = len(self.df_training[self.df_training['data_source'] == 'real'])
+        workout_templates = len(self.df_training['workout_template_id'].unique())
+        nutrition_templates = len(self.df_training['nutrition_template_id'].unique())
         
-        bars = axes[1, 1].bar(methodology_aspects, methodology_scores, 
-                             color=[self.colors['success'], self.colors['success'], 
-                                   self.colors['primary'], self.colors['accent']],
-                             alpha=0.8)
-        axes[1, 1].set_title('Research Methodology Validation', fontsize=14, fontweight='bold')
-        axes[1, 1].set_ylabel('Validation Score (%)')
-        axes[1, 1].set_ylim(0, 100)
-        axes[1, 1].tick_params(axis='x', rotation=45)
-        
-        # Add value labels
-        for bar in bars:
-            height = bar.get_height()
-            axes[1, 1].annotate(f'{height:.0f}%',
-                              xy=(bar.get_x() + bar.get_width() / 2, height),
-                              xytext=(0, 3), textcoords="offset points",
-                              ha='center', va='bottom', fontweight='bold')
-        
-        # 6. Key Research Findings
         findings_text = [
             f"✓ {total_samples:,} Total Samples",
             f"✓ {real_samples:,} Real Data Points",
@@ -1093,46 +1323,127 @@ class XGFitnessVisualizationSuite:
             f"✓ {nutrition_templates} Nutrition Templates"
         ]
         
+        # Add Rule-Based Baseline performance
+        test_data = self.df_training[self.df_training['split'] == 'test']
+        if len(test_data) > 0:
+            try:
+                rule_w_pred, rule_n_pred = self.model.predict_rule_based(test_data)
+                y_w_test = test_data['workout_template_id'].values
+                y_n_test = test_data['nutrition_template_id'].values
+                
+                rule_w_acc = accuracy_score(y_w_test, rule_w_pred)
+                rule_n_acc = accuracy_score(y_n_test, rule_n_pred)
+                
+                findings_text.extend([
+                    f"✓ Rule-Based Workout: {rule_w_acc:.1%}",
+                    f"✓ Rule-Based Nutrition: {rule_n_acc:.1%}"
+                ])
+            except AttributeError:
+                print("⚠️  Model does not have predict_rule_based method, skipping rule-based in research findings")
+        
         if self.model.is_trained:
             xgb_info = self.model.training_info
             findings_text.extend([
                 f"✓ XGBoost Workout: {xgb_info['workout_accuracy']:.1%}",
                 f"✓ XGBoost Nutrition: {xgb_info['nutrition_accuracy']:.1%}"
             ])
+            
+            if hasattr(self.model, 'rf_training_info') and self.model.rf_training_info:
+                rf_info = self.model.rf_training_info
+                findings_text.extend([
+                    f"✓ RF Workout: {rf_info['rf_workout_accuracy']:.1%}",
+                    f"✓ RF Nutrition: {rf_info['rf_nutrition_accuracy']:.1%}"
+                ])
         
-        axes[1, 2].text(0.05, 0.95, '\n'.join(findings_text), 
-                       transform=axes[1, 2].transAxes,
-                       fontsize=12, fontweight='bold',
-                       verticalalignment='top',
-                       bbox=dict(boxstyle="round,pad=0.3", facecolor=self.colors['background'], alpha=0.8))
-        axes[1, 2].set_title('Key Research Findings', fontsize=14, fontweight='bold')
-        axes[1, 2].axis('off')
+        fig, ax = plt.subplots(figsize=(12, 8))
+        ax.text(0.05, 0.95, '\n'.join(findings_text), 
+               transform=ax.transAxes,
+               fontsize=14, fontweight='bold',
+               verticalalignment='top',
+               bbox=dict(boxstyle="round,pad=0.5", facecolor=self.colors['background'], alpha=0.8))
+        ax.set_title('Key Research Findings (with Rule-Based Baseline)', fontsize=16, fontweight='bold')
+        ax.axis('off')
         
         plt.tight_layout()
-        plt.savefig(f'{self.save_dir}/09_research_summary_dashboard.png', 
+        plt.savefig(f'{self.save_dir}/36_research_findings.png', 
                    dpi=300, bbox_inches='tight', facecolor='white')
         plt.close()
     
-    def _list_generated_files(self):
-        """List all generated visualization files"""
-        generated_files = []
+    def _list_individual_files(self):
+        """List all generated individual files"""
         expected_files = [
-            '01_dataset_composition_analysis.png',
-            '02_data_quality_authenticity.png',
-            '03_demographic_physiological_analysis.png',
-            '04_template_assignment_analysis.png',
-            '09_research_summary_dashboard.png'
+            # Dataset Composition (6 files)
+            '01_data_source_distribution.png',
+            '02_split_distribution.png', 
+            '03_fitness_goal_distribution.png',
+            '04_activity_level_distribution.png',
+            '05_bmi_category_distribution.png',
+            '06_gender_distribution.png',
+            
+            # Data Quality (4 files)
+            '07_real_vs_synthetic_by_split.png',
+            '08_age_distribution.png',
+            '09_bmi_vs_tdee_scatter.png',
+            '10_activity_hours_scatter.png',
+            
+            # Demographics (6 files)
+            '11_height_by_gender.png',
+            '12_weight_by_gender.png',
+            '13_bmi_distribution_with_categories.png',
+            '14_bmr_vs_age_by_gender.png',
+            '15_tdee_by_activity_level.png',
+            '16_age_vs_bmi_by_goal.png',
+            
+            # Template Analysis (4 files)
+            '17_workout_template_distribution.png',
+            '18_nutrition_template_distribution.png',
+            '19_fat_loss_activity_bmi_heatmap.png',
+            '20_top_template_combinations.png',
+            
+            # Summary (3 files)
+            '34_dataset_summary.png',
+            '35_template_coverage.png',
+            '36_research_findings.png'
         ]
         
+        # Add model performance files if models are trained
         if self.model.is_trained:
-            expected_files.extend([
-                '05_model_performance_comparison.png',
-                '06_confusion_matrices.png',
-                '07_roc_analysis.png'
-            ])
+            model_files = [
+                # Model Performance Comparisons (3 files)
+                '21_workout_model_comparison.png',
+                '22_nutrition_model_comparison.png',
+                '23_overall_model_performance.png',
+                
+                # Confusion Matrices (2-4 files depending on RF availability)
+                '24_confusion_xgboost_workout.png',
+                '25_confusion_xgboost_nutrition.png',
+                
+                # ROC Curves (2-4 files depending on RF availability)
+                '28_roc_xgboost_workout.png',
+                '29_roc_xgboost_nutrition.png'
+            ]
             
-            if hasattr(self.model, 'workout_rf_model') and self.model.workout_rf_model:
-                expected_files.append('08_model_comparison_analysis.png')
+            rf_available = hasattr(self.model, 'workout_rf_model') and self.model.workout_rf_model
+            if rf_available:
+                model_files.extend([
+                    # Additional RF files
+                    '26_confusion_rf_workout.png',
+                    '27_confusion_rf_nutrition.png',
+                    '30_roc_rf_workout.png',
+                    '31_roc_rf_nutrition.png',
+                    
+                    # Model Comparison Analysis (2 files)
+                    '32_prediction_agreement.png',
+                    '33_algorithm_diversity.png'
+                ])
+            
+            expected_files.extend(model_files)
+        
+        # Sort files by number
+        expected_files.sort()
+        
+        generated_files = []
+        missing_files = []
         
         for filename in expected_files:
             filepath = os.path.join(self.save_dir, filename)
@@ -1140,39 +1451,83 @@ class XGFitnessVisualizationSuite:
                 file_size = os.path.getsize(filepath) / 1024  # Size in KB
                 generated_files.append(f"   ✅ {filename} ({file_size:.1f} KB)")
             else:
-                generated_files.append(f"   ❌ {filename} (missing)")
+                missing_files.append(f"   ❌ {filename} (missing)")
         
-        print("\nGenerated Files:")
+        print("\n" + "="*80)
+        print("INDIVIDUAL CHART GENERATION SUMMARY")
+        print("="*80)
+        
+        print(f"\nGenerated Files ({len(generated_files)}):")
         for file_info in generated_files:
             print(file_info)
         
-        print(f"\nTotal files generated: {len([f for f in generated_files if '✅' in f])}")
-        print(f"Directory: {os.path.abspath(self.save_dir)}")
+        if missing_files:
+            print(f"\nMissing Files ({len(missing_files)}):")
+            for file_info in missing_files:
+                print(file_info)
+        
+        print(f"\nSUMMARY:")
+        print(f"   📊 Total charts generated: {len(generated_files)}")
+        print(f"   📁 Output directory: {os.path.abspath(self.save_dir)}")
+        print(f"   💾 Total size: {sum([os.path.getsize(os.path.join(self.save_dir, f.split()[1])) for f in generated_files if os.path.exists(os.path.join(self.save_dir, f.split()[1]))]) / 1024:.1f} KB")
+        
+        # Chart categories summary
+        categories = {
+            "Dataset Composition": (1, 6),
+            "Data Quality": (7, 10), 
+            "Demographics": (11, 16),
+            "Template Analysis": (17, 20),
+            "Model Performance": (21, 23) if self.model.is_trained else None,
+            "Confusion Matrices": (24, 27) if self.model.is_trained else None,
+            "ROC Curves": (28, 31) if self.model.is_trained else None,
+            "Model Comparison": (32, 33) if self.model.is_trained and hasattr(self.model, 'workout_rf_model') else None,
+            "Summary": (34, 36)
+        }
+        
+        print(f"\nCHART CATEGORIES:")
+        for category, range_tuple in categories.items():
+            if range_tuple:
+                start, end = range_tuple
+                count = len([f for f in generated_files if any(f"/{i:02d}_" in f for i in range(start, end + 1))])
+                print(f"   📈 {category}: {count} charts")
 
 
-# Standalone visualization generation script
-def main():
+# Modified runner script integration
+def generate_individual_charts(model, df_training, save_dir='visualizations_individual'):
     """
-    Main function for standalone visualization generation
-    Usage: python model_visualization_suite.py [model_path] [data_path] [output_dir]
+    Main function to generate all individual charts
+    
+    Args:
+        model: Trained XGFitnessAIModel instance
+        df_training: Training dataset DataFrame  
+        save_dir: Directory to save individual visualizations
     """
+    # Create individual visualization suite instance
+    viz_suite = XGFitnessIndividualVisualizationSuite(model, df_training, save_dir)
+    
+    # Generate all individual charts
+    viz_suite.generate_all_individual_charts()
+    
+    return save_dir
+
+
+# Standalone execution for testing
+if __name__ == "__main__":
     import argparse
     import pickle
     
-    parser = argparse.ArgumentParser(description='Generate XGFitness AI Visualizations')
+    parser = argparse.ArgumentParser(description='Generate Individual XGFitness AI Charts')
     parser.add_argument('--model', '-m', default='models/xgfitness_ai_model.pkl',
                        help='Path to trained model file')
     parser.add_argument('--data', '-d', default='training_data.csv',
                        help='Path to training data CSV file')
-    parser.add_argument('--output', '-o', default='visualizations',
-                       help='Output directory for visualizations')
-    parser.add_argument('--format', '-f', default='png', choices=['png', 'pdf', 'svg'],
-                       help='Output format for visualizations')
+    parser.add_argument('--output', '-o', default='visualizations_individual',
+                       help='Output directory for individual charts')
     
     args = parser.parse_args()
     
-    print("🎨 XGFitness AI Visualization Suite")
-    print("="*50)
+    print("🎨 XGFitness AI Individual Chart Generator")
+    print("="*60)
     
     # Load model
     try:
@@ -1181,12 +1536,16 @@ def main():
             model_data = pickle.load(f)
         
         # Create a mock model object with the loaded data
-        class MockModel:
+        class LoadedModel:
             def __init__(self, model_data):
                 for key, value in model_data.items():
                     setattr(self, key, value)
+                # Ensure is_trained attribute exists
+                self.is_trained = getattr(self, 'is_trained', False) or (
+                    hasattr(self, 'workout_model') and getattr(self, 'workout_model', None) is not None
+                )
         
-        model = MockModel(model_data)
+        model = LoadedModel(model_data)
         print("✅ Model loaded successfully")
         
     except Exception as e:
@@ -1248,20 +1607,15 @@ def main():
         
         print("✅ Sample data generated successfully")
     
-    # Generate visualizations
+    # Generate individual charts
     try:
-        print(f"🎨 Generating visualizations...")
-        viz_suite = XGFitnessVisualizationSuite(model, df_training, args.output)
-        viz_suite.generate_all_visualizations()
+        print(f"🎨 Generating individual charts...")
+        generate_individual_charts(model, df_training, args.output)
         
-        print(f"\n🎉 Visualization generation completed!")
+        print(f"\n🎉 Individual chart generation completed!")
         print(f"📁 Output directory: {os.path.abspath(args.output)}")
         
     except Exception as e:
-        print(f"❌ Error generating visualizations: {e}")
+        print(f"❌ Error generating charts: {e}")
         import traceback
         traceback.print_exc()
-
-
-if __name__ == "__main__":
-    main()

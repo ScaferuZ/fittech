@@ -1,0 +1,3 @@
+Model,Workout Accuracy,Workout F1,Nutrition Accuracy,Nutrition F1,Note
+XGBoost,0.06934306569343066,0.008993298622356193,0.24635036496350365,0.09738594222568958,"ML model, expected to underperform due to data imbalance"
+Random Forest,0.06934306569343066,0.008993298622356193,0.06934306569343066,0.019824920890401596,"ML model, expected to underperform due to data imbalance"

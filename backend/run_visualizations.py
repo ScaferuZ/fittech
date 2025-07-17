@@ -20,9 +20,8 @@ def main():
     
     # Check for trained models
     model_files = [
-        'models/xgfitness_ai_model.pkl',
-        'models/xgfitness_ai_model_production.pkl', 
-        'models/research_model_comparison_production.pkl'
+        'models/research_model_comparison.pkl',
+        'models/xgfitness_ai_model.pkl'
     ]
     
     available_models = [f for f in model_files if os.path.exists(f)]
@@ -38,62 +37,47 @@ def main():
         print(f"   {i}. {model_file} ({size_mb:.1f} MB)")
     
     # Prioritize research model for visualizations (has both XGBoost + Random Forest)
-    research_model = 'models/research_model_comparison_production.pkl'
-    if research_model in available_models:
-        model_to_use = research_model
+    if 'models/research_model_comparison.pkl' in available_models:
+        model_to_use = 'models/research_model_comparison.pkl'
         print(f"\n🚀 Using RESEARCH model (best for visualizations): {model_to_use}")
     else:
-        # Fallback to largest available model
-        model_to_use = max(available_models, key=lambda x: os.path.getsize(x))
-        print(f"\n🚀 Using model: {model_to_use} (research model not available)")
+        # Fallback to production model
+        model_to_use = available_models[0]
+        print(f"\n🚀 Using model: {model_to_use}")
     
     # Load the model
     try:
         print("📥 Loading trained model...")
+        
+        # Import the actual model class
+        from src.thesis_model import XGFitnessAIModel
+        
+        # Create a proper model instance
+        model = XGFitnessAIModel('../data')
+        
+        # Load the model data
         with open(model_to_use, 'rb') as f:
             model_data = pickle.load(f)
         
-        # Create a mock model object with the loaded data
-        class LoadedModel:
-            def __init__(self, model_data):
-                for key, value in model_data.items():
-                    setattr(self, key, value)
-            
-            def prepare_training_data(self, df_training):
-                """Mock prepare_training_data method for visualization compatibility"""
-                # Import the actual model class to use its feature engineering
-                try:
-                    from src.thesis_model import XGFitnessAIModel
-                    temp_model = XGFitnessAIModel('../data')
-                    return temp_model.prepare_training_data(df_training)
-                except Exception as e:
-                    print(f"⚠️  Could not use full feature engineering: {e}")
-                    # Fallback to simplified features
-                    if 'split' not in df_training.columns:
-                        df_training['split'] = np.random.choice(['train', 'validation', 'test'], 
-                                                               len(df_training), p=[0.7, 0.15, 0.15])
-                    
-                    # Create feature matrix (simplified for visualizations)
-                    feature_cols = ['age', 'height_cm', 'weight_kg', 'bmi', 'bmr', 'tdee']
-                    available_cols = [col for col in feature_cols if col in df_training.columns]
-                    
-                    X = df_training[available_cols].values
-                    y_workout = df_training['workout_template_id'].values
-                    y_nutrition = df_training['nutrition_template_id'].values
-                    
-                    return X, y_workout, y_nutrition, df_training
-            
-            def compare_model_predictions(self, df_training):
-                """Mock method for model comparison"""
-                # Simple mock comparison data
-                test_samples = len(df_training[df_training['split'] == 'test']) if 'split' in df_training.columns else 100
-                return {
-                    'workout_differences': int(test_samples * 0.06),  # 6% difference based on training output
-                    'nutrition_differences': int(test_samples * 0.05),  # 5% difference based on training output
-                    'total_test_samples': test_samples
-                }
+        # Restore all attributes from the saved model
+        for key, value in model_data.items():
+            setattr(model, key, value)
         
-        model = LoadedModel(model_data)
+        # Ensure is_trained is set correctly
+        model.is_trained = getattr(model, 'is_trained', False) or (
+            hasattr(model, 'workout_model') and model.workout_model is not None
+        )
+        
+        # Ensure all expected attributes exist (even if None)
+        for attr in [
+            'workout_model', 'nutrition_model', 'workout_rf_model', 'nutrition_rf_model',
+            'scaler', 'rf_scaler', 'workout_label_encoder', 'nutrition_label_encoder',
+            'workout_rf_label_encoder', 'nutrition_rf_label_encoder',
+            'training_info', 'rf_training_info', 'workout_templates', 'nutrition_templates'
+        ]:
+            if not hasattr(model, attr):
+                setattr(model, attr, None)
+        
         print("✅ Model loaded successfully")
         
         # Print model info
@@ -139,14 +123,14 @@ def main():
         print(f"\n🎨 Generating comprehensive visualizations...")
         
         # Import and run the visualization suite
-        from visualisations import XGFitnessVisualizationSuite
+        from visualisations import XGFitnessIndividualVisualizationSuite
         
         # Create output directory with timestamp
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         output_dir = f"visualizations/run_{timestamp}"
         
         # Generate all visualizations
-        viz_suite = XGFitnessVisualizationSuite(model, df_training, output_dir)
+        viz_suite = XGFitnessIndividualVisualizationSuite(model, df_training, output_dir)
         
         # Check if we're using actual training data with all features
         using_real_data = df_training is not None and len(df_training.columns) >= 15
@@ -155,17 +139,112 @@ def main():
         else:
             print("⚠️  Using limited data - some visualizations may be simplified")
             
-        viz_suite.generate_all_visualizations()
-        
-        print(f"\n🎉 Visualization generation completed!")
-        print(f"📁 Output directory: {os.path.abspath(output_dir)}")
-        
-        # List generated files
-        if os.path.exists(output_dir):
-            files = [f for f in os.listdir(output_dir) if f.endswith('.png')]
-            print(f"📊 Generated {len(files)} visualization files:")
-            for file in sorted(files):
-                print(f"   ✅ {file}")
+        viz_suite.generate_all_individual_charts()
+
+        # === Additional custom visualizations for thesis ===
+        try:
+            print("\n🆕 Generating additional thesis visualizations...")
+            import matplotlib.pyplot as plt
+            import seaborn as sns
+            
+            # 1. BMI Category vs Workout Template heatmap
+            if 'bmi_category' in df_training.columns and 'workout_template_id' in df_training.columns:
+                pivot = pd.pivot_table(
+                    df_training,
+                    index='bmi_category',
+                    columns='workout_template_id',
+                    aggfunc='size',
+                    fill_value=0
+                )
+                plt.figure(figsize=(10,6))
+                sns.heatmap(pivot, annot=True, fmt='d', cmap='YlGnBu')
+                plt.title('Workout Template Assignment by BMI Category')
+                plt.ylabel('BMI Category')
+                plt.xlabel('Workout Template ID')
+                plt.tight_layout()
+                plt.savefig(f'{output_dir}/bmi_category_vs_workout_template.png')
+                plt.close()
+
+            # 2. Goal vs Activity vs Template heatmap
+            if all(col in df_training.columns for col in ['fitness_goal', 'activity_level', 'workout_template_id']):
+                pivot2 = pd.pivot_table(
+                    df_training,
+                    index=['fitness_goal', 'activity_level'],
+                    columns='workout_template_id',
+                    aggfunc='size',
+                    fill_value=0
+                )
+                plt.figure(figsize=(14,7))
+                sns.heatmap(pivot2, annot=True, fmt='d', cmap='coolwarm')
+                plt.title('Workout Template by Goal and Activity Level')
+                plt.ylabel('Goal, Activity Level')
+                plt.xlabel('Workout Template ID')
+                plt.tight_layout()
+                plt.savefig(f'{output_dir}/goal_activity_vs_workout_template.png')
+                plt.close()
+
+            # 3. Feature importance bar charts (XGBoost and RF)
+            def plot_feature_importance(model_obj, feature_names, title, filename):
+                if hasattr(model_obj, 'feature_importances_'):
+                    importances = model_obj.feature_importances_
+                    indices = np.argsort(importances)[::-1]
+                    plt.figure(figsize=(12,6))
+                    plt.title(title)
+                    plt.bar(range(len(importances)), importances[indices], align='center')
+                    plt.xticks(range(len(importances)), [feature_names[i] for i in indices], rotation=90)
+                    plt.tight_layout()
+                    plt.savefig(f'{output_dir}/{filename}')
+                    plt.close()
+
+            # Get feature names from the model
+            feature_names = [
+                'age', 'height_cm', 'weight_kg', 'bmi', 'bmr', 'tdee', 'activity_multiplier', 
+                'Mod_act', 'Vig_act', 'age_bmi_interaction', 'tdee_per_kg', 'activity_intensity', 
+                'height_weight_ratio', 'bmr_per_kg', 'age_activity_interaction', 'gender_Male', 
+                'age_group_young', 'age_group_middle', 'age_group_older', 'bmi_Normal', 
+                'bmi_Overweight', 'bmi_Obese', 'bmi_low_normal', 'bmi_high_normal', 
+                'bmi_low_overweight', 'bmi_high_overweight', 'activity_High Activity', 
+                'activity_Moderate Activity', 'activity_Low Activity'
+            ]
+
+            # Plot XGBoost feature importance
+            if hasattr(model, 'workout_model') and model.workout_model is not None:
+                plot_feature_importance(
+                    model.workout_model, feature_names, 
+                    'XGBoost Workout Model - Feature Importance',
+                    'xgb_workout_feature_importance.png'
+                )
+                
+            if hasattr(model, 'nutrition_model') and model.nutrition_model is not None:
+                plot_feature_importance(
+                    model.nutrition_model, feature_names, 
+                    'XGBoost Nutrition Model - Feature Importance',
+                    'xgb_nutrition_feature_importance.png'
+                )
+
+            # Plot Random Forest feature importance
+            if hasattr(model, 'workout_rf_model') and model.workout_rf_model is not None:
+                plot_feature_importance(
+                    model.workout_rf_model, feature_names, 
+                    'Random Forest Workout Model - Feature Importance',
+                    'rf_workout_feature_importance.png'
+                )
+                
+            if hasattr(model, 'nutrition_rf_model') and model.nutrition_rf_model is not None:
+                plot_feature_importance(
+                    model.nutrition_rf_model, feature_names, 
+                    'Random Forest Nutrition Model - Feature Importance',
+                    'rf_nutrition_feature_importance.png'
+                )
+
+            print("✅ Additional thesis visualizations generated")
+
+        except Exception as e:
+            print(f"⚠️  Error generating additional visualizations: {e}")
+
+        print(f"\n✅ All visualizations completed!")
+        print(f"📁 Output directory: {output_dir}")
+        print(f"📊 Generated {len(os.listdir(output_dir))} visualization files")
         
     except Exception as e:
         print(f"❌ Error generating visualizations: {e}")
@@ -173,13 +252,12 @@ def main():
         traceback.print_exc()
 
 def generate_sample_data_for_viz(model):
-    """Generate sample training data for visualization when CSV not available"""
-    print("🔄 Generating sample data for visualization...")
+    """Generate sample data for visualization when real data is not available"""
+    print("Generating sample data for demonstration...")
     
     np.random.seed(42)
     n_samples = 1000
     
-    # Generate sample data matching the model's expected structure
     df_training = pd.DataFrame({
         'age': np.random.randint(18, 65, n_samples),
         'gender': np.random.choice(['Male', 'Female'], n_samples),
@@ -191,51 +269,29 @@ def generate_sample_data_for_viz(model):
                                        n_samples, p=[0.5, 0.3, 0.2]),
         'data_source': np.random.choice(['real', 'synthetic'], n_samples, p=[0.7, 0.3]),
         'split': np.random.choice(['train', 'validation', 'test'], n_samples, p=[0.7, 0.15, 0.15]),
+        'workout_template_id': np.random.randint(1, 10, n_samples),
+        'nutrition_template_id': np.random.randint(1, 9, n_samples),
         'Mod_act': np.random.uniform(0, 10, n_samples),
         'Vig_act': np.random.uniform(0, 5, n_samples)
     })
     
-    # Assign template IDs based on model templates
-    if hasattr(model, 'workout_templates') and model.workout_templates is not None and len(model.workout_templates) > 0:
-        workout_template_ids = list(range(1, len(model.workout_templates) + 1))
-        df_training['workout_template_id'] = np.random.choice(workout_template_ids, n_samples)
-    else:
-        df_training['workout_template_id'] = np.random.randint(1, 10, n_samples)
-    
-    if hasattr(model, 'nutrition_templates') and model.nutrition_templates is not None and len(model.nutrition_templates) > 0:
-        nutrition_template_ids = list(range(1, len(model.nutrition_templates) + 1))
-        df_training['nutrition_template_id'] = np.random.choice(nutrition_template_ids, n_samples)
-    else:
-        df_training['nutrition_template_id'] = np.random.randint(1, 9, n_samples)
-    
     # Calculate derived fields
     df_training['bmi'] = df_training['weight_kg'] / ((df_training['height_cm'] / 100) ** 2)
-    df_training['bmi_category'] = pd.cut(df_training['bmi'], 
-                                       bins=[0, 18.5, 25, 30, 100], 
-                                       labels=['Underweight', 'Normal', 'Overweight', 'Obese'])
     
-    # Calculate BMR using Harris-Benedict equation
-    df_training['bmr'] = df_training.apply(lambda row: 
-        88.362 + (13.397 * row['weight_kg']) + (4.799 * row['height_cm']) - (5.677 * row['age'])
-        if row['gender'] == 'Male' else
-        447.593 + (9.247 * row['weight_kg']) + (3.098 * row['height_cm']) - (4.330 * row['age']), 
-        axis=1)
+    # Add BMI categories
+    def categorize_bmi(bmi):
+        if bmi < 18.5:
+            return 'Underweight'
+        elif bmi < 25:
+            return 'Normal'
+        elif bmi < 30:
+            return 'Overweight'
+        else:
+            return 'Obese'
     
-    # Calculate TDEE
-    activity_multipliers = {'Low Activity': 1.29, 'Moderate Activity': 1.55, 'High Activity': 1.81}
-    df_training['tdee'] = df_training['bmr'] * df_training['activity_level'].map(activity_multipliers)
+    df_training['bmi_category'] = df_training['bmi'].apply(categorize_bmi)
     
-    print(f"✅ Sample data generated: {len(df_training)} samples")
     return df_training
 
 if __name__ == "__main__":
-    try:
-        main()
-    except KeyboardInterrupt:
-        print("\n⚠️ Visualization generation interrupted by user")
-        sys.exit(1)
-    except Exception as e:
-        print(f"\n❌ Visualization generation failed: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        sys.exit(1)
+    main()

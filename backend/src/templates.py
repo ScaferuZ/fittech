@@ -130,11 +130,9 @@ class TemplateManager:
              'caloric_intake_multiplier': 1.15, 'protein_per_kg': 2.3, 'carbs_per_kg': 4.75, 'fat_per_kg': 1.0},
             {'template_id': 5, 'goal': 'Muscle Gain', 'bmi_category': 'Normal', 
              'caloric_intake_multiplier': 1.10, 'protein_per_kg': 2.1, 'carbs_per_kg': 4.25, 'fat_per_kg': 0.95},
-            {'template_id': 6, 'goal': 'Maintenance', 'bmi_category': 'Underweight', 
-             'caloric_intake_multiplier': 1.00, 'protein_per_kg': 1.8, 'carbs_per_kg': 3.25, 'fat_per_kg': 0.90},
-            {'template_id': 7, 'goal': 'Maintenance', 'bmi_category': 'Normal', 
+            {'template_id': 6, 'goal': 'Maintenance', 'bmi_category': 'Normal', 
              'caloric_intake_multiplier': 0.95, 'protein_per_kg': 1.8, 'carbs_per_kg': 3.25, 'fat_per_kg': 0.85},
-            {'template_id': 8, 'goal': 'Maintenance', 'bmi_category': 'Overweight', 
+            {'template_id': 7, 'goal': 'Maintenance', 'bmi_category': 'Overweight', 
              'caloric_intake_multiplier': 0.90, 'protein_per_kg': 1.8, 'carbs_per_kg': 3.25, 'fat_per_kg': 0.80}
         ]
         return pd.DataFrame(templates)
@@ -417,7 +415,7 @@ class TemplateManager:
         expected_nutrition_combinations = [
             ('Fat Loss', 'Normal'), ('Fat Loss', 'Overweight'), ('Fat Loss', 'Obese'),
             ('Muscle Gain', 'Underweight'), ('Muscle Gain', 'Normal'),
-            ('Maintenance', 'Underweight'), ('Maintenance', 'Normal'), ('Maintenance', 'Overweight')
+            ('Maintenance', 'Normal'), ('Maintenance', 'Overweight')
         ]
         
         for goal, bmi_cat in expected_nutrition_combinations:

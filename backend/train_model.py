@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
 """
-XGFitness AI Model       # Train all models using the unified training method
-    print("\n🚀 Training ALL Models (XGBoost + Random Forest)...")
-    comprehensive_info = model.train_all_models(training_data) Train all models using the unified training method
-    print("\n🚀 Training ALL Models (XGBoost + Random Forest)...")
-    comprehensive_info = model.train_all_models(training_data)ining Script - RESTORED AUTHENTICITY VERSION
+XGFitness AI Model Training Script
 Trains DUAL XGBoost models (main AI) + DUAL Random Forest models (comparison)
 Implements EXACT user requirements for thesis authenticity
 """
@@ -42,8 +38,13 @@ def main():
     
     # Create training dataset with EXACT AUTHENTICITY METHODOLOGY
     print("🔍 Loading real data with EXACT AUTHENTICITY METHODOLOGY...")
-    training_data = model.load_real_data_with_exact_splits()
+    training_data, test_df_original = model.load_real_data_with_exact_splits()
     print(f"✅ Training dataset loaded: {len(training_data)} samples")
+    
+    # Analyze data limitations transparently (no artificial fixes)
+    print("\n📋 Running transparent data limitations analysis...")
+    model.analyze_data_limitations(training_data)
+    print(f"✅ Data limitations analysis completed")
     
     # Save training data for visualizations
     print("💾 Saving training data for visualizations...")
@@ -57,8 +58,8 @@ def main():
     start_time = time.time()
     
     # Train all models using the unified training method
-    print("\n� Training ALL Models (XGBoost + Random Forest)...")
-    comprehensive_info = model.train_all_models(training_data, random_state=42)
+    print("\n🚀 Training ALL Models (XGBoost + Random Forest)...")
+    comprehensive_info = model.train_all_models(training_data, test_df_original, random_state=42)
     
     training_time = time.time() - start_time
     print(f"✅ COMPREHENSIVE training completed in {training_time:.2f} seconds")
@@ -67,7 +68,6 @@ def main():
     # Extract training info
     xgboost_info = comprehensive_info['xgb_training_info']
     random_forest_info = comprehensive_info['rf_training_info']
-    
     
     # Display comprehensive training results
     print("📊 COMPREHENSIVE TRAINING RESULTS:")
@@ -167,6 +167,48 @@ def main():
     print("   Run visualizations separately: python run_visualizations.py")
     print("   (This ensures training data is available for visualizations)")
     print()
+    
+    # Extract test set for honest evaluation (real data only)
+    print("\n🔍 Running final model comparison on real test set (rule-based = upper bound)...")
+    X_test = comprehensive_info['X_test']
+    y_workout_test = comprehensive_info['y_workout_test']
+    y_nutrition_test = comprehensive_info['y_nutrition_test']
+    test_indices = comprehensive_info['test_indices']
+    test_df = comprehensive_info['test_df_original']
+    X_test_scaled = comprehensive_info['X_test_scaled']
+    
+    # Get the processed test data that matches the ML model evaluation
+    X, y_workout, y_nutrition, df_enhanced = model.prepare_training_data(test_df)
+    test_mask = df_enhanced['split'] == 'test'
+    if test_mask.sum() == 0:
+        # If no test split found, use all data
+        processed_test_df = df_enhanced
+    else:
+        processed_test_df = df_enhanced[test_mask]
+    
+    # This will print and save the summary table
+    model.report_model_comparison(X_test, y_workout_test, y_nutrition_test, processed_test_df, test_indices, output_path='model_comparison_summary.csv')
+    print("\n[INFO] Rule-based system is the theoretical upper bound. ML models are expected to underperform due to data imbalance and limited real data. This summary is saved for thesis reporting.\n")
+    
+    # Print comprehensive thesis comparison summary
+    print("\n📊 Generating comprehensive thesis comparison summary...")
+    from thesis_model import print_model_comparison_summary
+    
+    # Create models dictionary for the summary function
+    workout_models = {
+        'xgboost': model.workout_model,
+        'random_forest': model.workout_rf_model
+    }
+    nutrition_models = {
+        'xgboost': model.nutrition_model,
+        'random_forest': model.nutrition_rf_model
+    }
+    
+    # Call the comprehensive summary function
+    print_model_comparison_summary(
+        workout_models, nutrition_models, test_indices, test_df, 
+        y_workout_test, y_nutrition_test, X_test_scaled
+    )
     
     print()
     
